@@ -1,13 +1,18 @@
--- premake5.lua
+libdirs { "./extern/SDL2/lib/x64" }
+includedirs { "./extern/SDL2/include"}
+
 workspace "HelloWorld"
    configurations { "Debug", "Release" }
 
 project "HelloWorld"
    kind "ConsoleApp"
-   language "C"
+   language "C++"
+   architecture "x64"
    targetdir "bin/%{cfg.buildcfg}"
+   links {"SDL2main", "SDL2"}
 
-   files { "**.h", "**.c" }
+   files { "**.h", "**.cpp" }
+
 
    filter "configurations:Debug"
       defines { "DEBUG" }
