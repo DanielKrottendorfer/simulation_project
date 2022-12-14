@@ -59,13 +59,18 @@ bool init()
 	}
 	else
 	{
-		//Use OpenGL 3.1 core
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 1 );
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 4 );
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
+		SDL_GL_LoadLibrary(NULL); // Default OpenGL is fine.
+
+		// Request an OpenGL 4.5 context (should be core)
+		SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+		// Also request a depth buffer
+		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
 		//Create window
-		gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN );
+		gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
 		if( gWindow == NULL )
 		{
 			printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
@@ -81,9 +86,7 @@ bool init()
 				success = false;
 			}
 			else
-			{
-
-				
+			{				
 				//Initialize GLAD
 				if (!gladLoadGLLoader(SDL_GL_GetProcAddress))
 				{
@@ -103,6 +106,9 @@ bool init()
 					printf( "Unable to initialize OpenGL!\n" );
 					success = false;
 				}
+
+				glDisable(GL_DEPTH_TEST);
+				glDisable(GL_CULL_FACE);
 			}
 		}
 	}
@@ -124,7 +130,7 @@ bool initGL()
 	//Get vertex source
 	const GLchar* vertexShaderSource[] =
 	{
-		"#version 140\nin vec2 LVertexPos2D; void main() { gl_Position = vec4( LVertexPos2D.x, LVertexPos2D.y, 0, 1 ); }"
+		"#version 330\nin vec2 LVertexPos2D; void main() { gl_Position = vec4( LVertexPos2D.x, LVertexPos2D.y, 0, 1 ); }"
 	};
 
 	//Set vertex source
@@ -154,7 +160,7 @@ bool initGL()
 		//Get fragment source
 		const GLchar* fragmentShaderSource[] =
 		{
-			"#version 140\nout vec4 LFragment; void main() { LFragment = vec4( 1.0, 1.0, 1.0, 1.0 ); }"
+			"#version 330\nout vec4 color; void main() { color = vec4( 1.0, 1.0, 1.0, 1.0 ); }"
 		};
 
 		//Set fragment source
