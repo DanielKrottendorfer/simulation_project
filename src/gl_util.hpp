@@ -1,3 +1,4 @@
+#pragma once
 
 #include <glad/glad.h>
 
@@ -11,28 +12,21 @@ namespace gl_util
 {
     void printProgramLog(GLuint program)
     {
-        // Make sure name is shader
         if (glIsProgram(program))
         {
-            // Program log length
             int infoLogLength = 0;
             int maxLength = infoLogLength;
 
-            // Get info string length
             glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
 
-            // Allocate string
             char *infoLog = new char[maxLength];
 
-            // Get info log
             glGetProgramInfoLog(program, maxLength, &infoLogLength, infoLog);
             if (infoLogLength > 0)
             {
-                // Print Log
                 printf("%s\n", infoLog);
             }
 
-            // Deallocate string
             delete[] infoLog;
         }
         else
@@ -43,28 +37,21 @@ namespace gl_util
 
     void printShaderLog(GLuint shader)
     {
-        // Make sure name is shader
         if (glIsShader(shader))
         {
-            // Shader log length
             int infoLogLength = 0;
             int maxLength = infoLogLength;
 
-            // Get info string length
             glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
 
-            // Allocate string
             char *infoLog = new char[maxLength];
 
-            // Get info log
             glGetShaderInfoLog(shader, maxLength, &infoLogLength, infoLog);
             if (infoLogLength > 0)
             {
-                // Print Log
                 printf("%s\n", infoLog);
             }
 
-            // Deallocate string
             delete[] infoLog;
         }
         else
@@ -85,13 +72,10 @@ namespace gl_util
         std::string str = buffer.str();
         const char *c_str = str.c_str();
 
-        // Set fragment source
         glShaderSource(shader, 1, &c_str, NULL);
 
-        // Compile fragment source
         glCompileShader(shader);
 
-        // Check fragment shader for errors
         GLint fShaderCompiled = GL_FALSE;
         glGetShaderiv(shader, GL_COMPILE_STATUS, &fShaderCompiled);
 
@@ -104,13 +88,12 @@ namespace gl_util
 
         return shader;
     }
-    
+
     void link_shader(GLuint program)
     {
 
         glLinkProgram(program);
 
-        // Check for errors
         GLint programSuccess = GL_TRUE;
         glGetProgramiv(program, GL_LINK_STATUS, &programSuccess);
         if (programSuccess != GL_TRUE)
@@ -120,20 +103,27 @@ namespace gl_util
         }
     }
 
-    class Mesh
+    struct Mesh
     {
 
     public:
         Mesh()
         {
             mVAO = 0;
-            glGenVertexArrays(1, &mVAO);
-            glBindVertexArray(mVAO);
-
             mVBOs = std::vector<GLuint>();
         }
 
-        ~Mesh()
+        GLuint mVAO;
+        std::vector<GLuint> mVBOs;
+
+        static Mesh new_mesh() {
+            Mesh m;
+            glGenVertexArrays(1, &m.mVAO);
+            glBindVertexArray(m.mVAO);
+            return m;
+        }
+
+        void cleanup()
         {
             for (GLuint b : mVBOs)
             {
@@ -163,10 +153,50 @@ namespace gl_util
         {
             glDrawElements(mode, count, GL_UNSIGNED_INT, NULL);
         }
-
-    private:
-        GLuint mVAO;
-        std::vector<GLuint> mVBOs;
     };
 
+    struct Program
+    {
+        GLint id;
+
+        Program() {
+            id = -1;
+        }
+
+        Program(const char *vs_path, const char *fs_path, const char *gs_path = nullptr)
+        {
+            id = glCreateProgram();
+
+            GLint vs = gl_util::new_shader(vs_path, GL_VERTEX_SHADER);
+            glAttachShader(id, vs);
+            GLint gs = 0;
+            if (gs_path != nullptr)
+            {
+                gs = gl_util::new_shader(gs_path, GL_GEOMETRY_SHADER);
+                glAttachShader(id, gs);
+            }
+            GLint fs = gl_util::new_shader(fs_path, GL_FRAGMENT_SHADER);
+            glAttachShader(id, fs);
+
+            gl_util::link_shader(id);
+
+            glDetachShader(id, vs);
+            if (gs_path != nullptr)
+            {
+                glDetachShader(id, gs);
+            }
+            glDetachShader(id, fs);
+
+            glDeleteShader(vs);
+            if (gs_path != nullptr)
+            {
+                glDeleteShader(gs);
+            }
+            glDeleteShader(fs);
+        }
+
+        void use(){
+            glUseProgram(id);
+        }
+    };
 }
