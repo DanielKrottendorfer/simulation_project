@@ -116,11 +116,10 @@ namespace gl_util
         GLuint mVAO;
         std::vector<GLuint> mVBOs;
 
-        static Mesh new_mesh() {
-            Mesh m;
-            glGenVertexArrays(1, &m.mVAO);
-            glBindVertexArray(m.mVAO);
-            return m;
+        void init()
+        {
+            glGenVertexArrays(1, &mVAO);
+            glBindVertexArray(mVAO);
         }
 
         void cleanup()
@@ -159,7 +158,8 @@ namespace gl_util
     {
         GLint id;
 
-        Program() {
+        Program()
+        {
             id = -1;
         }
 
@@ -195,7 +195,8 @@ namespace gl_util
             glDeleteShader(fs);
         }
 
-        void use(){
+        void use()
+        {
             glUseProgram(id);
         }
     };

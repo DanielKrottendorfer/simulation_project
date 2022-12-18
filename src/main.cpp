@@ -15,17 +15,17 @@ void close();
 
 SDL_Window *gWindow = NULL;
 SDL_GLContext gContext;
-void MessageCallback( GLenum source,
-                 GLenum type,
-                 GLuint id,
-                 GLenum severity,
-                 GLsizei length,
-                 const GLchar* message,
-                 const void* userParam )
+void MessageCallback(GLenum source,
+					 GLenum type,
+					 GLuint id,
+					 GLenum severity,
+					 GLsizei length,
+					 const GLchar *message,
+					 const void *userParam)
 {
-  printf("GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-           ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
-            type, severity, message );
+	printf("GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+		   (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+		   type, severity, message);
 }
 
 bool init()
@@ -74,17 +74,16 @@ bool init()
 
 				glDisable(GL_DEPTH_TEST);
 				glDisable(GL_CULL_FACE);
-				
+
 				// During init, enable debug output
-				glEnable              ( GL_DEBUG_OUTPUT );
-				glDebugMessageCallback( MessageCallback, 0 );
+				glEnable(GL_DEBUG_OUTPUT);
+				glDebugMessageCallback(MessageCallback, 0);
 			}
 		}
 	}
 
 	return success;
 }
-
 
 void close()
 {
