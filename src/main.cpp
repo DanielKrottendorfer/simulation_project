@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <string>
 
-#include "gl_util.hpp"
+
+#include "opengl_util.hpp"
 #include "gamestate.hpp"
+
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -74,10 +76,14 @@ bool init()
 
 				glDisable(GL_DEPTH_TEST);
 				glDisable(GL_CULL_FACE);
+				
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-				// During init, enable debug output
-				glEnable(GL_DEBUG_OUTPUT);
-				glDebugMessageCallback(MessageCallback, 0);
+				#ifdef DEBUG
+					glEnable(GL_DEBUG_OUTPUT);
+					glDebugMessageCallback(MessageCallback, 0);
+				#endif
 			}
 		}
 	}
