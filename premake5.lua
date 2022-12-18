@@ -1,5 +1,5 @@
 libdirs { "./extern/SDL2/lib/x64"}
-includedirs { "./extern/SDL2/include", "./extern/glad/include"}
+includedirs { "./extern/SDL2/include", "./extern/glad/include", "./extern/glm"}
 
 workspace "HelloWorld"
    configurations { "Debug", "Release" }
