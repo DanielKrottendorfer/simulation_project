@@ -4,10 +4,8 @@
 #include <stdio.h>
 #include <string>
 
-
 #include "opengl_util.hpp"
-#include "gamestate.hpp"
-
+#include "game_state.hpp"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -76,14 +74,14 @@ bool init()
 
 				glDisable(GL_DEPTH_TEST);
 				glDisable(GL_CULL_FACE);
-				
+
 				glEnable(GL_BLEND);
 				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-				#ifdef DEBUG
-					glEnable(GL_DEBUG_OUTPUT);
-					glDebugMessageCallback(MessageCallback, 0);
-				#endif
+#ifdef DEBUG
+				glEnable(GL_DEBUG_OUTPUT);
+				glDebugMessageCallback(MessageCallback, 0);
+#endif
 			}
 		}
 	}
@@ -116,26 +114,19 @@ int main(int argc, char *args[])
 
 		SDL_StartTextInput();
 
-		while (!quit)
+		while (!g.m_quit)
 		{
 			while (SDL_PollEvent(&e) != 0)
 			{
-				if (e.type == SDL_QUIT)
-				{
-					quit = true;
-				}
-				else if (e.type == SDL_TEXTINPUT)
-				{
-					int x = 0, y = 0;
-					SDL_GetMouseState(&x, &y);
-					g.handleKeys(e.text.text[0], x, y);
-				}
+				g.handleEvent(e);
 			}
 
 			g.render();
 
 			SDL_GL_SwapWindow(gWindow);
 		}
+
+		g.cleanup();
 
 		SDL_StopTextInput();
 	}

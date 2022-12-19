@@ -200,11 +200,16 @@ namespace gl_util
         {
             glUseProgram(id);
         }
+
+        void cleanup()
+        {
+            glDeleteProgram(id);
+        }
     };
 
     struct Texture
     {
-        GLuint id;
+        GLuint m_id;
 
         bool load_png(const char *filename)
         {
@@ -220,9 +225,8 @@ namespace gl_util
                 return false;
             }
 
-            GLuint id;
-            glGenTextures(1, &id);
-            glBindTexture(GL_TEXTURE_2D, id);
+            glGenTextures(1, &m_id);
+            glBindTexture(GL_TEXTURE_2D, m_id);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 
             delete (image);
@@ -236,9 +240,20 @@ namespace gl_util
             return true;
         }
 
+        void activate_texture(GLuint a)
+        {
+            glActiveTexture(GL_TEXTURE0 + a);
+            glBindTexture(GL_TEXTURE_2D, m_id);
+        }
+
+        void cleanup()
+        {
+            glDeleteTextures(1, &m_id);
+        }
+
         Texture()
         {
-            id = 0;
+            m_id = 0;
         }
     };
 }
