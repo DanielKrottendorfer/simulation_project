@@ -1,8 +1,9 @@
 #pragma once
 
-#include "opengl_util.hpp"
-
 #include <glm/glm.hpp>
+#include <glm/gtx/string_cast.hpp>
+#include "opengl_util.hpp"
+#include "settings.hpp"
 
 struct GameObject
 {
@@ -12,9 +13,16 @@ struct GameObject
 
     glm::vec2 m_position;
     glm::vec2 m_heading;
-    float m_speed;
+    glm::vec2 m_force;
+
+    float m_radius;
+
+    float m_mass;
 
     static GameObject new_2d_sprite(const char *tex_path);
+    void calc_gravity(const GameObject &other);
+    void calc_init_speed(const GameObject &other);
+    void update();
     void cleanup();
 };
 
@@ -51,7 +59,46 @@ GameObject GameObject::new_2d_sprite(const char *tex_path)
 
     g.m_texture.load_png(tex_path);
 
+    g.m_position = glm::vec2(0.0f, 0.0f);
+    g.m_heading = glm::vec2(0.0f, 0.0f);
+    g.m_force = glm::vec2(0.0f, 0.0f);
+
+    g.m_radius = 1.0;
+    g.m_mass = 0.0;
+
     return g;
+}
+
+void GameObject::calc_init_speed(const GameObject &other)
+{
+    // glm::vec2 dir = this->m_position - other.m_position;
+    // float r = glm::length(dir);
+
+    float r = m_position.x - other.m_position.x;
+
+    float v = std::sqrt((G * other.m_mass) / r);
+
+    m_heading += glm::vec2(0.0, 1.0) * v;
+}
+
+void GameObject::calc_gravity(const GameObject &other)
+{
+    glm::vec2 dir = other.m_position - this->m_position;
+    float r = glm::length(dir);
+
+    dir = dir / r;
+
+    float f = G * ((this->m_mass * other.m_mass) / (r * r));
+
+    this->m_force += dir * f;
+}
+
+void GameObject::update()
+{
+    m_heading += m_force / m_mass;
+    m_position += m_heading;
+
+    m_force = glm::vec2(0.f, 0.f);
 }
 
 void GameObject::cleanup()

@@ -7,9 +7,6 @@
 #include "opengl_util.hpp"
 #include "game_state.hpp"
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
-
 bool init();
 void close();
 
@@ -78,7 +75,7 @@ bool init()
 				glEnable(GL_BLEND);
 				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-#ifdef DEBUG
+#ifdef DEBUG_CALLBACK
 				glEnable(GL_DEBUG_OUTPUT);
 				glDebugMessageCallback(MessageCallback, 0);
 #endif
@@ -121,6 +118,7 @@ int main(int argc, char *args[])
 				g.handleEvent(e);
 			}
 
+			g.update();
 			g.render();
 
 			SDL_GL_SwapWindow(gWindow);
