@@ -6,6 +6,8 @@
 #include <imgui_impl_opengl3.h>
 
 #include <stdio.h>
+#include <chrono>
+#include <thread>
 #include <string>
 
 #include "opengl_util.hpp"
@@ -125,6 +127,11 @@ int main(int argc, char *args[])
 
 		SDL_Event event;
 		SDL_StartTextInput();
+
+		ImVec2 window_pos = ImVec2(0.0f,0.0f);
+
+		int zoom = game_state.m_zoom;
+		int delay = 100;
 		
 		while (!game_state.m_quit)
 		{
@@ -142,14 +149,22 @@ int main(int argc, char *args[])
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplSDL2_NewFrame();
 			ImGui::NewFrame();
-
-			bool t = true;
-			ImGui::ShowDemoWindow(&t);
+			
+			zoom = game_state.m_zoom;
+			ImGui::Begin("Controls");
+			ImGui::SetWindowPos(window_pos);
+			ImGui::SliderInt("zoom",&zoom,1,4998);
+			game_state.m_zoom = zoom;
+			ImGui::SliderInt("delay",&delay,0,100);
+			ImGui::End();
 
         	ImGui::Render();
+
         	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 			
 			SDL_GL_SwapWindow(gWindow);
+			std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+
 		}
 
 		ImGui_ImplOpenGL3_Shutdown();
