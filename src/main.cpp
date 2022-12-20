@@ -1,6 +1,10 @@
 #include <SDL.h>
 #include <glad/glad.h>
 #include <SDL_opengl.h>
+#include <imgui.h>
+#include <imgui_impl_sdl.h>
+#include <imgui_impl_opengl3.h>
+
 #include <stdio.h>
 #include <string>
 
@@ -37,12 +41,15 @@ bool init()
 	else
 	{
 
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
-		gWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+		SDL_WindowFlags w_flags = (SDL_WindowFlags) (SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+
+		gWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, w_flags);
 		if (gWindow == NULL)
 		{
 			printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
@@ -103,28 +110,53 @@ int main(int argc, char *args[])
 	else
 	{
 
-		GameState g = GameState();
+		GameState game_state = GameState();
+
+		
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		ImGui::StyleColorsDark();
+		ImGui_ImplSDL2_InitForOpenGL(gWindow, gContext);
+    	const char* glsl_version = "#version 330";
+		ImGui_ImplOpenGL3_Init(glsl_version);
+
 
 		bool quit = false;
 
-		SDL_Event e;
-
+		SDL_Event event;
 		SDL_StartTextInput();
-
-		while (!g.m_quit)
+		
+		while (!game_state.m_quit)
 		{
-			while (SDL_PollEvent(&e) != 0)
+			while (SDL_PollEvent(&event) != 0)
 			{
-				g.handleEvent(e);
+				
+            	ImGui_ImplSDL2_ProcessEvent(&event);
+				game_state.handleEvent(event);
 			}
 
-			g.update();
-			g.render();
 
+			game_state.update();
+			game_state.render();
+
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplSDL2_NewFrame();
+			ImGui::NewFrame();
+
+			bool t = true;
+			ImGui::ShowDemoWindow(&t);
+
+        	ImGui::Render();
+        	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+			
 			SDL_GL_SwapWindow(gWindow);
 		}
 
-		g.cleanup();
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplSDL2_Shutdown();
+		ImGui::DestroyContext();
+
+		game_state.cleanup();
 
 		SDL_StopTextInput();
 	}
