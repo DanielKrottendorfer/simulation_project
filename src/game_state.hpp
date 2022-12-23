@@ -74,7 +74,7 @@ GameState::GameState()
     m_game_objects[1].m_radius = 2.44f;
     m_game_objects[2].m_radius = 6.052f;
     m_game_objects[3].m_radius = 6.371f;
-    m_game_objects[4].m_radius = .10f;
+    m_game_objects[4].m_radius = 1.8f;
     m_game_objects[5].m_radius = 3.390f;
     m_game_objects[6].m_radius = 69.911f;
     m_game_objects[7].m_radius = 58.232f;
@@ -86,8 +86,8 @@ GameState::GameState()
     m_game_objects[1].m_mass = .055f;
     m_game_objects[2].m_mass = .815f;
     m_game_objects[3].m_mass = 1.0f;
-    m_game_objects[4].m_mass = .12f;
-    m_game_objects[5].m_mass = 0.107f;
+    m_game_objects[4].m_mass = .012f;
+    m_game_objects[5].m_mass = .107f;
     m_game_objects[6].m_mass = 317.8f;
     m_game_objects[7].m_mass = 95.16f;
     m_game_objects[8].m_mass = 14.54f;
@@ -111,22 +111,24 @@ GameState::GameState()
 
 void GameState::update()
 {
+    for (int i_ = 0; i_ < 100; ++i_) {
 
-    for (size_t i = 1; i < m_game_objects.size(); ++i)
-    {
-        for (size_t y = 0; y < m_game_objects.size(); ++y)
+        for (size_t i = 1; i < m_game_objects.size(); ++i)
         {
+            for (size_t y = 0; y < m_game_objects.size(); ++y)
+            {
 
-            if (i == y)
-                continue;
+                if (i == y)
+                    continue;
 
-            m_game_objects[i].calc_gravity(m_game_objects[y]);
+                m_game_objects[i].calc_gravity(m_game_objects[y]);
+            }
         }
-    }
 
-    for (size_t i = 1; i < m_game_objects.size(); ++i)
-    {
-        m_game_objects[i].update();
+        for (size_t i = 1; i < m_game_objects.size(); ++i)
+        {
+            m_game_objects[i].update();
+        }
     }
 }
 
@@ -208,16 +210,16 @@ void GameState::handleEvent(SDL_Event event)
     {
         auto mouse_wheel_dir = event.wheel.y;
 
-        if (mouse_wheel_dir > 0)
+        if (mouse_wheel_dir > 0.0f)
         {
-            if (m_zoom < 5000.0f)
+            if (m_zoom < 4900.0f)
             {
                 m_zoom += 100.0f;
             }
         }
         else
         {
-            if (m_zoom > 0.0f)
+            if (m_zoom > 100.0f)
             {
                 m_zoom -= 100.0f;
             }
@@ -267,5 +269,9 @@ void GameState::handleEvent(SDL_Event event)
     default:
         break;
     }
+}
+
+void adj_G(int exp){
+    G = 6.65f * powf(10.0,exp);
 }
 

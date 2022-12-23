@@ -71,9 +71,6 @@ GameObject GameObject::new_2d_sprite(const char *tex_path)
 
 void GameObject::calc_init_speed(const GameObject &other)
 {
-    // glm::vec2 dir = this->m_position - other.m_position;
-    // float r = glm::length(dir);
-
     float r = m_position.x - other.m_position.x;
 
     float v = std::sqrt((G * other.m_mass) / r);

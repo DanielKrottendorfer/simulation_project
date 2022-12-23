@@ -132,7 +132,10 @@ int main(int argc, char *args[])
 
 		int zoom = game_state.m_zoom;
 		int delay = 100;
-		
+		int g_exp = -11;
+
+		adj_G(g_exp);
+
 		while (!game_state.m_quit)
 		{
 			while (SDL_PollEvent(&event) != 0)
@@ -156,6 +159,9 @@ int main(int argc, char *args[])
 			ImGui::SliderInt("zoom",&zoom,1,4998);
 			game_state.m_zoom = zoom;
 			ImGui::SliderInt("delay",&delay,0,100);
+			if (ImGui::SliderInt("g", &g_exp, -11, 0)) {
+				adj_G(g_exp);
+			};
 			ImGui::End();
 
         	ImGui::Render();
