@@ -21,13 +21,22 @@ struct GameState
     bool m_space_down = false;
 
 
-    std::vector<GameObject> m_game_objects;
+    GameObjectNew m_game_object;
 
     gl_util::Program m_program;
+    gl_util::ComputeShader m_cs;
 
     glm::mat4 m_proj_mat;
 
-    float m_zoom = 4998.0;
+    float m_camera_zoom = 2.0f;
+    float m_camera_x = 0.0f;
+    float m_camera_y = 0.0f;
+
+    bool left = false;
+    bool right = false;
+    bool up = false;
+    bool down = false;
+
     size_t m_focus = 3;
 
     GLsizei m_window_width = SCREEN_WIDTH;
@@ -47,143 +56,76 @@ GameState::GameState()
 {
     m_program = gl_util::Program("./src/shader/vs.glsl", "./src/shader/fs.glsl");
 
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/sun.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/mercury.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/venus.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/earth.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/moon.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/mars.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/jupiter.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/saturn.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/uranus.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/neptune.png"));
+    m_cs = gl_util::ComputeShader("./src/shader/cs.glsl");
 
+    m_game_object = GameObjectNew::new_cloth();
 
-    m_game_objects[1].m_position.x = 63.81f;
-    m_game_objects[2].m_position.x = 107.59f;
-    m_game_objects[3].m_position.x = 151.48f;
-    m_game_objects[4].m_position.x = 151.48f + 0.38f;
-    m_game_objects[5].m_position.x = 248.84f;
-    m_game_objects[6].m_position.x = 755.91f;
-    m_game_objects[7].m_position.x = 1487.8f;
-    m_game_objects[8].m_position.x = 2954.6f;
-    m_game_objects[9].m_position.x = 4475.5f;
-
-
-    m_game_objects[0].m_radius = 696.342f;
-    m_game_objects[1].m_radius = 2.44f;
-    m_game_objects[2].m_radius = 6.052f;
-    m_game_objects[3].m_radius = 6.371f;
-    m_game_objects[4].m_radius = 1.8f;
-    m_game_objects[5].m_radius = 3.390f;
-    m_game_objects[6].m_radius = 69.911f;
-    m_game_objects[7].m_radius = 58.232f;
-    m_game_objects[8].m_radius = 25.362f;
-    m_game_objects[9].m_radius = 24.622f;
-
-
-    m_game_objects[0].m_mass = 333000.f;
-    m_game_objects[1].m_mass = .055f;
-    m_game_objects[2].m_mass = .815f;
-    m_game_objects[3].m_mass = 1.0f;
-    m_game_objects[4].m_mass = .012f;
-    m_game_objects[5].m_mass = .107f;
-    m_game_objects[6].m_mass = 317.8f;
-    m_game_objects[7].m_mass = 95.16f;
-    m_game_objects[8].m_mass = 14.54f;
-    m_game_objects[9].m_mass = 17.15f;
-
-
-    for(auto& go: m_game_objects){
-        go.m_radius /= 10.0f;
-        go.m_mass *= 100.0f;
-    }
-
-    m_game_objects[4].calc_init_speed(m_game_objects[3]);
-
-    for (size_t i = 1; i < m_game_objects.size(); ++i)
-        m_game_objects[i].calc_init_speed(m_game_objects[0]);
-
-    float temp = 5000.0f - m_zoom;
+    float temp = m_camera_zoom;
 
     m_proj_mat = glm::ortho(-temp, temp, -temp, temp, -2.0f, 2.0f);
 }
 
 void GameState::update()
 {
-    for (int i_ = 0; i_ < 100; ++i_) {
-
-        for (size_t i = 1; i < m_game_objects.size(); ++i)
-        {
-            for (size_t y = 0; y < m_game_objects.size(); ++y)
-            {
-
-                if (i == y)
-                    continue;
-
-                m_game_objects[i].calc_gravity(m_game_objects[y]);
-            }
-        }
-
-        for (size_t i = 1; i < m_game_objects.size(); ++i)
-        {
-            m_game_objects[i].update();
-        }
+    m_cs.use();
+    std::cout << "COMPUTE SHADER ID: " << m_cs.id << std::endl;
+    m_game_object.update();
+    if (left)
+    {
+        m_camera_x -= 0.01f;
     }
+    if (right)
+    {
+        m_camera_x += 0.01f;
+    }
+    if (up)
+    {
+        m_camera_y += 0.01f;
+    }
+    if (down)
+    {
+        m_camera_y -= 0.01f;
+    }
+    glDispatchCompute((unsigned int)1, (unsigned int)1, 1);
+    // make sure writing to image has finished before read
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
 void GameState::render()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.f, 0.f, 0.1f, 1.f);
-    if (gRenderQuad)
-    {
-        m_program.use();
 
-        float temp = 5000.0f - m_zoom;
-
-        glm::vec2 pp = m_game_objects[m_focus].m_position;
+    m_program.use();
 
 
-        float ratio = static_cast<float>(m_window_height) / static_cast<float>(m_window_width);
-        m_proj_mat = glm::ortho(-temp + pp.x, temp + pp.x, (-temp*ratio + pp.y),  (temp*ratio + pp.y), -2.0f, 2.0f);
+    float ratio = static_cast<float>(m_window_height) / static_cast<float>(m_window_width);
 
-        for (auto go : m_game_objects)
-        {
+    glm::mat4 m = glm::translate(glm::vec3(m_game_object.m_position.x, m_game_object.m_position.y, 0.0f));
 
-            glm::mat4 m = glm::translate(glm::vec3(go.m_position.x, go.m_position.y, 0.0f));
-            glm::mat4 s = glm::scale(glm::vec3(go.m_radius, go.m_radius, go.m_radius));
+    m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
 
-            glm::mat4 mvp = m_proj_mat * m * s;
+    glm::mat4 mvp = m_proj_mat * m;
 
-            glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
+    glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 
-            go.m_texture.activate_texture(1);
-            glUniform1i(1, 1);
+    m_game_object.m_texture.activate_texture(1);
+    glUniform1i(1, 1);
 
-            go.m_mesh.bind();
-            go.m_mesh.draw_elements(GL_TRIANGLE_FAN, 4);
-        }
+    m_game_object.m_mesh.bind();
+    m_game_object.m_mesh.draw_elements(GL_TRIANGLES, m_game_object.m_indexSize);
 
-        glUseProgram(NULL);
-    }
+    glUseProgram(NULL);
 }
 
 void GameState::cleanup()
 {
-    for (auto go : m_game_objects)
-    {
-        go.cleanup();
-    }
-
+    m_game_object.cleanup();
     m_program.cleanup();
 }
 
 void GameState::handleEvent(SDL_Event event)
 {
-    // int x = 0, y = 0;
-    // SDL_GetMouseState(&x, &y);
-
     switch (event.type)
     {
     case SDL_QUIT:
@@ -212,26 +154,25 @@ void GameState::handleEvent(SDL_Event event)
 
         if (mouse_wheel_dir > 0.0f)
         {
-            if (m_zoom < 4900.0f)
-            {
-                m_zoom += 100.0f;
-            }
+            m_camera_zoom -= 0.1f;
         }
         else
         {
-            if (m_zoom > 100.0f)
-            {
-                m_zoom -= 100.0f;
-            }
+            m_camera_zoom += 0.1f;
         }
 
-        printf("zoom: %f\n", m_zoom);
-
-        float temp = 5000.0f - m_zoom;
-
-        m_proj_mat = glm::ortho(-temp, temp, -temp, temp, -2.0f, 2.0f);
+        printf("zoom: %f\n", m_camera_zoom);
     }
+    break;
 
+    case SDL_MOUSEMOTION:
+    {
+        int x = 0, y = 0;
+        SDL_GetMouseState(&x, &y);
+
+        std::cout << "X MOTION: " << x << std::endl;
+        std::cout << "Y MOTION: " << y << std::endl;
+    }
     break;
 
     case SDL_KEYDOWN:
@@ -241,24 +182,68 @@ void GameState::handleEvent(SDL_Event event)
         {
         case SDL_SCANCODE_Q:
             gRenderQuad = !gRenderQuad;
+            if(!gRenderQuad)
+            {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            }
+            else
+            {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            }
             break;
         case SDL_SCANCODE_ESCAPE:
             m_quit = true;
             break;
-        case SDL_SCANCODE_SPACE:
-            m_space_down = true;
+        case SDL_SCANCODE_W:
+            // m_camera_y += 0.1f;
+            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
+            up = true;
             break;
-        case SDL_SCANCODE_LEFT:
-            if (m_focus > 0)
-                m_focus--;
-            else
-                m_focus = m_game_objects.size() -1;
+        case SDL_SCANCODE_A:
+            left = true;
+            // m_camera_x -= 0.1f;
+            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
             break;
-        case SDL_SCANCODE_RIGHT:
-            if (m_focus < m_game_objects.size() -1 )
-                m_focus++;
-            else
-                m_focus = 0;                       
+        case SDL_SCANCODE_S:
+            down = true;
+            // m_camera_y -= 0.1f;
+            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
+            break;
+        case SDL_SCANCODE_D:
+            right = true;
+            // m_camera_x += 0.1f;
+            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
+            break;
+        default:
+            break;
+        }
+    }
+    break;
+
+    case SDL_KEYUP:
+    {
+        auto key = event.key.keysym.scancode;
+        switch (key)
+        {
+        case SDL_SCANCODE_W:
+            up = false;
+            // m_camera_y += 0.1f;
+            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
+            break;
+        case SDL_SCANCODE_A:
+            left = false;
+            // m_camera_x -= 0.1f;
+            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
+            break;
+        case SDL_SCANCODE_S:
+            down = false;
+            // m_camera_y -= 0.1f;
+            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
+            break;
+        case SDL_SCANCODE_D:
+            right = false;
+            // m_camera_x += 0.1f;
+            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
             break;
         default:
             break;
@@ -270,8 +255,3 @@ void GameState::handleEvent(SDL_Event event)
         break;
     }
 }
-
-void adj_G(int exp){
-    G = 6.65f * powf(10.0,exp);
-}
-

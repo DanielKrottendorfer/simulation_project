@@ -43,8 +43,8 @@ bool init()
 	else
 	{
 
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -84,10 +84,9 @@ bool init()
 				glEnable(GL_BLEND);
 				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-#ifdef DEBUG_CALLBACK
+
 				glEnable(GL_DEBUG_OUTPUT);
 				glDebugMessageCallback(MessageCallback, 0);
-#endif
 			}
 		}
 	}
@@ -119,9 +118,8 @@ int main(int argc, char *args[])
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		ImGui::StyleColorsDark();
 		ImGui_ImplSDL2_InitForOpenGL(gWindow, gContext);
-    	const char* glsl_version = "#version 330";
+    	const char* glsl_version = "#version 460";
 		ImGui_ImplOpenGL3_Init(glsl_version);
-
 
 		bool quit = false;
 
@@ -130,11 +128,8 @@ int main(int argc, char *args[])
 
 		ImVec2 window_pos = ImVec2(0.0f,0.0f);
 
-		int zoom = game_state.m_zoom;
 		int delay = 100;
 		int g_exp = -11;
-
-		adj_G(g_exp);
 
 		while (!game_state.m_quit)
 		{
@@ -145,24 +140,12 @@ int main(int argc, char *args[])
 				game_state.handleEvent(event);
 			}
 
-
 			game_state.update();
 			game_state.render();
 
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplSDL2_NewFrame();
 			ImGui::NewFrame();
-			
-			zoom = game_state.m_zoom;
-			ImGui::Begin("Controls");
-			ImGui::SetWindowPos(window_pos);
-			ImGui::SliderInt("zoom",&zoom,1,4998);
-			game_state.m_zoom = zoom;
-			ImGui::SliderInt("delay",&delay,0,100);
-			if (ImGui::SliderInt("g", &g_exp, -11, 0)) {
-				adj_G(g_exp);
-			};
-			ImGui::End();
 
         	ImGui::Render();
 
@@ -170,7 +153,6 @@ int main(int argc, char *args[])
 			
 			SDL_GL_SwapWindow(gWindow);
 			std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-
 		}
 
 		ImGui_ImplOpenGL3_Shutdown();

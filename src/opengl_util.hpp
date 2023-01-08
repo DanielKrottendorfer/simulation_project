@@ -207,6 +207,37 @@ namespace gl_util
         }
     };
 
+    struct ComputeShader
+    {
+        GLint id;
+
+        ComputeShader()
+        {
+            id = -1;
+        }
+
+        ComputeShader(const char* cs_path)
+        {
+            id = glCreateProgram();
+            GLint cs = gl_util::new_shader(cs_path, GL_COMPUTE_SHADER);
+            glAttachShader(id, cs);
+            gl_util::link_shader(id);
+            glDetachShader(id, cs);
+            glDeleteShader(cs);
+        }
+
+        void use()
+        {
+            glUseProgram(id);
+        }
+
+        void cleanup()
+        {
+            glDeleteProgram(id);
+        }
+
+    };
+
     struct Texture
     {
         GLuint m_id;
