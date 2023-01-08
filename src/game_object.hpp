@@ -14721,13 +14721,11 @@ GameObjectNew GameObjectNew::new_cloth()
     glGenBuffers(1, &g.ssb_vertex);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, g.ssb_vertex);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vertexDataVec4), vertexDataVec4, GL_STATIC_DRAW); //sizeof(data) only works for statically sized C/C++ arrays.
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, g.ssb_vertex);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
     glGenBuffers(1, &g.ssb_color);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, g.ssb_color);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(colIn), colIn, GL_STATIC_DRAW); //sizeof(data) only works for statically sized C/C++ arrays.
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, g.ssb_color);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
     //g.m_mesh.attach_buffer(uvData, 8, GL_ARRAY_BUFFER);

@@ -86,7 +86,9 @@ void GameState::update()
     {
         m_camera_y -= 0.01f;
     }
+    std::cout << "AAAAAAAAAAAAAA" << std::endl;
     glDispatchCompute((unsigned int)1, (unsigned int)1, 1);
+    std::cout << "BBBBBBBBBBBBBBB" << std::endl;
     // make sure writing to image has finished before read
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
@@ -109,12 +111,12 @@ void GameState::render()
 
     glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 
-    m_game_object.m_texture.activate_texture(1);
-    glUniform1i(1, 1);
+    //m_game_object.m_texture.activate_texture(1);
+    //glUniform1i(1, 1);
 
     m_game_object.m_mesh.bind();
     m_game_object.m_mesh.draw_elements(GL_TRIANGLES, m_game_object.m_indexSize);
-
+    glBindVertexArray(0);
     glUseProgram(NULL);
 }
 

@@ -114,12 +114,12 @@ int main(int argc, char *args[])
 		GameState game_state = GameState();
 
 		
-		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		ImGui::StyleColorsDark();
-		ImGui_ImplSDL2_InitForOpenGL(gWindow, gContext);
-    	const char* glsl_version = "#version 460";
-		ImGui_ImplOpenGL3_Init(glsl_version);
+		//ImGui::CreateContext();
+		//ImGuiIO& io = ImGui::GetIO(); (void)io;
+		//ImGui::StyleColorsDark();
+		//ImGui_ImplSDL2_InitForOpenGL(gWindow, gContext);
+    	//const char* glsl_version = "#version 460";
+		//ImGui_ImplOpenGL3_Init(glsl_version);
 
 		bool quit = false;
 
@@ -136,28 +136,28 @@ int main(int argc, char *args[])
 			while (SDL_PollEvent(&event) != 0)
 			{
 				
-            	ImGui_ImplSDL2_ProcessEvent(&event);
+            	//ImGui_ImplSDL2_ProcessEvent(&event);
 				game_state.handleEvent(event);
 			}
 
 			game_state.update();
 			game_state.render();
 
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplSDL2_NewFrame();
-			ImGui::NewFrame();
+			//ImGui_ImplOpenGL3_NewFrame();
+			//ImGui_ImplSDL2_NewFrame();
+			//ImGui::NewFrame();
+			//
+        	//ImGui::Render();
 
-        	ImGui::Render();
-
-        	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        	//ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 			
 			SDL_GL_SwapWindow(gWindow);
-			std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+			//std::this_thread::sleep_for(std::chrono::milliseconds(delay));
 		}
 
-		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplSDL2_Shutdown();
-		ImGui::DestroyContext();
+		//ImGui_ImplOpenGL3_Shutdown();
+		//ImGui_ImplSDL2_Shutdown();
+		//ImGui::DestroyContext();
 
 		game_state.cleanup();
 

@@ -220,6 +220,7 @@ namespace gl_util
         {
             id = glCreateProgram();
             GLint cs = gl_util::new_shader(cs_path, GL_COMPUTE_SHADER);
+            glCompileShader(cs);
             glAttachShader(id, cs);
             gl_util::link_shader(id);
             glDetachShader(id, cs);
