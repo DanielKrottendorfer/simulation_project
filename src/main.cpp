@@ -43,8 +43,8 @@ bool init()
 	else
 	{
 
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -131,7 +131,7 @@ int main(int argc, char *args[])
 		ImVec2 window_pos = ImVec2(0.0f,0.0f);
 
 		int zoom = game_state.m_zoom;
-		int delay = 100;
+		int delay = 0;
 		int g_exp = -11;
 
 		adj_G(g_exp);

@@ -16,7 +16,7 @@
 
 struct GameState
 {
-    bool gRenderQuad = true;
+    bool m_gRenderQuad = true;
     bool m_quit = false;
     bool m_space_down = false;
 
@@ -29,6 +29,8 @@ struct GameState
 
     float m_zoom = 4998.0;
     size_t m_focus = 3;
+
+    int loops = 0;
 
     GLsizei m_window_width = SCREEN_WIDTH;
     GLsizei m_window_height = SCREEN_HEIGHT;
@@ -95,8 +97,8 @@ GameState::GameState()
 
 
     for(auto& go: m_game_objects){
-        go.m_radius /= 10.0f;
-        go.m_mass *= 100.0f;
+        go.m_radius /= 5.0f;
+        //go.m_mass *= 1.0f;
     }
 
     m_game_objects[4].calc_init_speed(m_game_objects[3]);
@@ -111,7 +113,7 @@ GameState::GameState()
 
 void GameState::update()
 {
-    for (int i_ = 0; i_ < 100; ++i_) {
+    for (int i_ = 0; i_ < 10000; ++i_) {
 
         for (size_t i = 1; i < m_game_objects.size(); ++i)
         {
@@ -124,19 +126,32 @@ void GameState::update()
                 m_game_objects[i].calc_gravity(m_game_objects[y]);
             }
         }
+        
+        glm::vec2 temp = m_game_objects[3].m_position;
 
         for (size_t i = 1; i < m_game_objects.size(); ++i)
         {
             m_game_objects[i].update();
         }
+
+        if(temp.y < 0.0 && m_game_objects[3].m_position.y > 0.0)
+            printf("earth took %d calculated seconds to finish an orbit",loops);
+        
+        loops += 1;
     }
+
+
+    if (m_game_objects[3].m_position.y == 0.0)
+        printf("cycles: %d",loops);
+
+
 }
 
 void GameState::render()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.f, 0.f, 0.1f, 1.f);
-    if (gRenderQuad)
+    if (m_gRenderQuad)
     {
         m_program.use();
 
@@ -240,7 +255,7 @@ void GameState::handleEvent(SDL_Event event)
         switch (key)
         {
         case SDL_SCANCODE_Q:
-            gRenderQuad = !gRenderQuad;
+            m_gRenderQuad = !m_gRenderQuad;
             break;
         case SDL_SCANCODE_ESCAPE:
             m_quit = true;
