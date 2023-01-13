@@ -26,6 +26,8 @@ struct GameState
 
     gl_util::Program m_program;
     gl_util::ComputeShader m_cs;
+    gl_util::ComputeShader m_cs_cor;
+    gl_util::ComputeShader m_cs_app;
 
     glm::mat4 m_proj_mat;
 
@@ -58,6 +60,8 @@ GameState::GameState()
     m_program = gl_util::Program("./src/shader/vs.glsl", "./src/shader/fs.glsl");
 
     m_cs = gl_util::ComputeShader("./src/shader/cs.glsl");
+    m_cs_cor = gl_util::ComputeShader("./src/shader/c_cor.glsl");
+    m_cs_app = gl_util::ComputeShader("./src/shader/c_apply.glsl");
 
     m_game_object = GameObjectNew::new_cloth();
 
@@ -86,11 +90,22 @@ void GameState::update()
     {
         m_camera_y -= 0.01f;
     }
-    // make sure writing to image has finished before read
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glUniform1i(7, int(m_change_vertex));
     glDispatchCompute((unsigned int)100, (unsigned int)1, 1);
+    // make sure writing to image has finished before read
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     m_change_vertex = false;
+        
+    m_cs_cor.use();
+    m_game_object.update();
+    glDispatchCompute((unsigned int)6520, (unsigned int)1, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    m_cs_app.use();
+    m_game_object.update();
+    glDispatchCompute((unsigned int)13000, (unsigned int)1, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
 }
 
 void GameState::render()
@@ -109,7 +124,7 @@ void GameState::render()
 
     glm::mat4 mvp = m_proj_mat * m;
 
-    glUniformMatrix4fv(3, 1, GL_FALSE, &mvp[0][0]);
+    glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 
     //m_game_object.m_texture.activate_texture(1);
     //glUniform1i(1, 1);

@@ -16,16 +16,9 @@ layout(std430, binding = 5) buffer edgeIn{
     uint[2] edIn[];
 };
 
-
-	
 void main() {
-    if(moveVertex == 1 && gl_GlobalInvocationID.x == 0)
+    if(gl_GlobalInvocationID.x == 27 && moveVertex == 1)
     {
-        vertIn[0].x = -80.8;
-    }
-    if(gl_GlobalInvocationID.x % 3 == 0)
-    {
-        vertIn[gl_GlobalInvocationID.x].x = -80.8;
-        colIn[gl_GlobalInvocationID.x] = vec4(0, 1, 1, 1);
+        vertIn[gl_GlobalInvocationID.x].x -= 1.0;
     }
 }

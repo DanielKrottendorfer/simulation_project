@@ -3,7 +3,7 @@
 layout(location = 0) in vec4 Pos4D; 
 layout(location = 1) in vec4 coloress;
 
-layout(location = 3) uniform mat4 proj;
+layout(location = 0) uniform mat4 proj;
 
 out vec4 colD;
 
