@@ -10,5 +10,4 @@ out vec4 colD;
 void main() { 
     colD = coloress;
     gl_Position = proj * Pos4D;
-
 }

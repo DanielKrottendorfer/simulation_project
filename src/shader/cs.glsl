@@ -26,6 +26,6 @@ void main() {
     if(gl_GlobalInvocationID.x % 3 == 0)
     {
         vertIn[gl_GlobalInvocationID.x].x = -80.8;
-        //colIn[gl_GlobalInvocationID.x] = vec4(0, 1, 1, 1);
+        colIn[gl_GlobalInvocationID.x] = vec4(0, 1, 1, 1);
     }
 }

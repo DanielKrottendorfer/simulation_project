@@ -124,7 +124,6 @@ struct GameObjectNew
     glm::vec3 m_position;
 	unsigned int m_indexSize;
 
-    GLuint ssb_vertex, ssb_color, ssb_edges;
 
     static GameObjectNew new_cloth();
 
@@ -180,45 +179,26 @@ GameObjectNew GameObjectNew::new_cloth()
 	unsigned int size = sizeof(vertexDataVec4) / sizeof(vertexDataVec4[0]);
 
     g.m_mesh.init();
-    g.m_mesh.attach_buffer(vertexDataVec4, size, GL_ARRAY_BUFFER);
-    glEnableVertexAttribArray(0);
-
-    glGenBuffers(1, &g.ssb_vertex);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, g.ssb_vertex);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vertexDataVec4), vertexDataVec4, GL_STATIC_DRAW); //sizeof(data) only works for statically sized C/C++ arrays.
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
-
-    glGenBuffers(1, &g.ssb_color);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, g.ssb_color);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ddd), ddd, GL_STATIC_DRAW); //sizeof(data) only works for statically sized C/C++ arrays.
+    g.m_mesh.attach_buffer(ddd, size, GL_ARRAY_BUFFER);
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
-
-    glGenBuffers(1, &g.ssb_edges);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, g.ssb_edges);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(edgeIdVector), &edgeIdVector[0], GL_STATIC_DRAW); //sizeof(data) only works for statically sized C/C++ arrays.
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
-
-    //g.m_mesh.attach_buffer(uvData, 8, GL_ARRAY_BUFFER);
-    //glEnableVertexAttribArray(1);
-    //glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), NULL);
+    g.m_mesh.attach_buffer(vertexDataVec4, size, GL_ARRAY_BUFFER);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
 
 	g.m_indexSize = sizeof(faceTriIds) / sizeof(faceTriIds[0]);
-
     g.m_mesh.attach_buffer(faceTriIds, g.m_indexSize, GL_ELEMENT_ARRAY_BUFFER);
 
     g.m_position = glm::vec3(0.0f, 0.0f, 0.0f);
 
+    glEnableVertexAttribArray(0);
 
     return g;
 }
 
 void GameObjectNew::update()
 {
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssb_vertex);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, ssb_color);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, ssb_edges);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_mesh.mVBOs[0]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_mesh.mVBOs[1]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_mesh.mVBOs[2]);
 }
 
 void GameObjectNew::cleanup()
