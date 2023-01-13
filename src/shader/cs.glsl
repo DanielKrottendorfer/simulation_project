@@ -15,9 +15,12 @@ layout(std430, binding = 4) buffer colorIn{
 layout(std430, binding = 5) buffer edgeIn{
     uint[2] edIn[];
 };
+layout(std430, binding = 9) buffer fixedIn {
+    uint stiff[];
+};
 
 void main() {
-    if(gl_GlobalInvocationID.x == 27 && moveVertex == 1)
+    if(stiff[gl_GlobalInvocationID.x] == 0 && moveVertex == 1)
     {
         vertIn[gl_GlobalInvocationID.x].x -= 1.0;
     }

@@ -21,19 +21,19 @@ struct GameState
     bool m_space_down = false;
     bool m_change_vertex = false;
 
-
     GameObjectNew m_game_object;
 
     gl_util::Program m_program;
     gl_util::ComputeShader m_cs;
+    gl_util::ComputeShader m_cs_grv;
     gl_util::ComputeShader m_cs_cor;
     gl_util::ComputeShader m_cs_app;
 
     glm::mat4 m_proj_mat;
 
-    float m_camera_zoom = 2.0f;
+    float m_camera_zoom = 0.5f;
     float m_camera_x = 0.0f;
-    float m_camera_y = 0.0f;
+    float m_camera_y = 0.76f;
 
     bool left = false;
     bool right = false;
@@ -60,6 +60,7 @@ GameState::GameState()
     m_program = gl_util::Program("./src/shader/vs.glsl", "./src/shader/fs.glsl");
 
     m_cs = gl_util::ComputeShader("./src/shader/cs.glsl");
+    m_cs_grv = gl_util::ComputeShader("./src/shader/c_grav.glsl");
     m_cs_cor = gl_util::ComputeShader("./src/shader/c_cor.glsl");
     m_cs_app = gl_util::ComputeShader("./src/shader/c_apply.glsl");
 
@@ -72,8 +73,6 @@ GameState::GameState()
 
 void GameState::update()
 {
-    m_cs.use();
-    m_game_object.update();
     if (left)
     {
         m_camera_x -= 0.01f;
@@ -90,22 +89,36 @@ void GameState::update()
     {
         m_camera_y -= 0.01f;
     }
-    glUniform1i(7, int(m_change_vertex));
-    glDispatchCompute((unsigned int)100, (unsigned int)1, 1);
-    // make sure writing to image has finished before read
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    std::cout << m_camera_y << std::endl;
+    std::cout << m_camera_zoom << std::endl;
+
+     m_cs.use();
+     m_game_object.update();
+     glUniform1i(7, int(m_change_vertex));
+     glDispatchCompute((unsigned int)100, (unsigned int)1, 1);
+     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    m_cs_grv.use();
+    m_game_object.update();
+    glDispatchCompute((unsigned int)m_game_object.m_verteces, (unsigned int)1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+
     m_change_vertex = false;
-        
-    m_cs_cor.use();
-    m_game_object.update();
-    glDispatchCompute((unsigned int)6520, (unsigned int)1, 1);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    for (int i = 0; i < 100; ++i)
+    {
 
-    m_cs_app.use();
-    m_game_object.update();
-    glDispatchCompute((unsigned int)13000, (unsigned int)1, 1);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        m_cs_cor.use();
+        m_game_object.update();
+        glDispatchCompute((unsigned int)m_game_object.m_edges, (unsigned int)1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
+        m_cs_app.use();
+        m_game_object.update();
+        glDispatchCompute((unsigned int)m_game_object.m_verteces, (unsigned int)1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    }
 }
 
 void GameState::render()
@@ -114,7 +127,6 @@ void GameState::render()
     glClearColor(0.f, 0.f, 0.1f, 1.f);
 
     m_program.use();
-
 
     float ratio = static_cast<float>(m_window_height) / static_cast<float>(m_window_width);
 
@@ -126,8 +138,8 @@ void GameState::render()
 
     glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
 
-    //m_game_object.m_texture.activate_texture(1);
-    //glUniform1i(1, 1);
+    // m_game_object.m_texture.activate_texture(1);
+    // glUniform1i(1, 1);
 
     m_game_object.m_mesh.bind();
     m_game_object.m_mesh.draw_elements(GL_TRIANGLES, m_game_object.m_indexSize);
@@ -178,7 +190,7 @@ void GameState::handleEvent(SDL_Event event)
             m_camera_zoom += 0.05f;
         }
 
-        //printf("zoom: %f\n", m_camera_zoom);
+        // printf("zoom: %f\n", m_camera_zoom);
     }
     break;
 
@@ -187,8 +199,8 @@ void GameState::handleEvent(SDL_Event event)
         int x = 0, y = 0;
         SDL_GetMouseState(&x, &y);
 
-        //std::cout << "X MOTION: " << x << std::endl;
-        //std::cout << "Y MOTION: " << y << std::endl;
+        // std::cout << "X MOTION: " << x << std::endl;
+        // std::cout << "Y MOTION: " << y << std::endl;
     }
     break;
 
@@ -199,7 +211,7 @@ void GameState::handleEvent(SDL_Event event)
         {
         case SDL_SCANCODE_Q:
             gRenderQuad = !gRenderQuad;
-            if(!gRenderQuad)
+            if (!gRenderQuad)
             {
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             }

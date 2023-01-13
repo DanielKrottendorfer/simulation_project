@@ -27,7 +27,9 @@ layout(std430, binding = 8) buffer lenIn {
     uint lens[];
 };
 
-float MAGIC_S = 0.2; //MAGIC;
+layout(std430, binding = 9) buffer fixedIn {
+    uint stiff[];
+};
 
 void main() {
 
@@ -36,10 +38,16 @@ void main() {
         uint j = refs[gl_GlobalInvocationID.x][i];
 
         if (edIn[j][0] == gl_GlobalInvocationID.x) {
-            vertIn[gl_GlobalInvocationID.x] += cor[j];
+            if (stiff[edIn[j][0]] == 0) {
+                vertIn[gl_GlobalInvocationID.x] += cor[j];
+            }
+            colIn[gl_GlobalInvocationID.x].x = 0.0;
         }
         else {
-            vertIn[gl_GlobalInvocationID.x] -= cor[j];
+            if (stiff[edIn[j][1]] == 0) {
+                vertIn[gl_GlobalInvocationID.x] -= cor[j];
+            }
+            colIn[gl_GlobalInvocationID.x].x = 0.0;
         };
     };
 }
