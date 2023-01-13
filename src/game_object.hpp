@@ -5,7 +5,11 @@
 #include "opengl_util.hpp"
 #include "settings.hpp"
 
-
+struct Edge
+{
+    int edgeA;
+    int edgeB;
+};
 
 struct GameObject
 {
@@ -119,7 +123,7 @@ struct GameObjectNew
     glm::vec3 m_position;
 	unsigned int m_indexSize;
 
-    GLuint ssb_vertex, ssb_color;
+    GLuint ssb_vertex, ssb_color, ssb_edges;
 
     static GameObjectNew new_cloth();
 
@@ -14707,25 +14711,60 @@ GameObjectNew GameObjectNew::new_cloth()
         1.0f, 0.0f,
         0.0f, 0.0f};
 
-    GLuint indexData[] = { 0, 1, 2, 3 };
+    std::vector<Edge> edgeIdVector;
+    std::vector<GLfloat> colorVec;
 
-    GLfloat colIn[] = { 1.0, 0.0, 0.0, 1.0 };
+    for(int x = 0; x < ((sizeof(vertexDataVec4) / sizeof(vertexDataVec4[0])) - 4); x += 4)
+    {
+        for (int y = x + 4; y < sizeof(vertexDataVec4) / sizeof(vertexDataVec4[0]); y += 4)
+        {
+            if (abs(vertexDataVec4[x] - vertexDataVec4[y]) <= 0.011)
+            {
+                if (abs(vertexDataVec4[x + 1] - vertexDataVec4[y + 1]) <= 0.011)
+                {
+                    Edge temp;
+                    temp.edgeA = x / 4;
+                    temp.edgeB = y / 4;
+                    edgeIdVector.push_back(temp);
+                }
+            }
+        }
+        colorVec.push_back(1.0f);
+        colorVec.push_back(0.0f);
+        colorVec.push_back(1.0f);
+        colorVec.push_back(0.0f);
+    }
+    colorVec.push_back(1.0f);
+    colorVec.push_back(0.0f);
+    colorVec.push_back(1.0f);
+    colorVec.push_back(1.0f);
+
+    float* ddd = &colorVec[0];
+
+    //std::cout << colorVec.size() << std::endl;
+    //std::cout << sizeof(vertexDataVec4) / sizeof(vertexDataVec4[0]) << std::endl;
 
 	unsigned int size = sizeof(vertexDataVec4) / sizeof(vertexDataVec4[0]);
 
     g.m_mesh.init();
     g.m_mesh.attach_buffer(vertexDataVec4, size, GL_ARRAY_BUFFER);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
 
     glGenBuffers(1, &g.ssb_vertex);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, g.ssb_vertex);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vertexDataVec4), vertexDataVec4, GL_STATIC_DRAW); //sizeof(data) only works for statically sized C/C++ arrays.
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
     glGenBuffers(1, &g.ssb_color);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, g.ssb_color);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(colIn), colIn, GL_STATIC_DRAW); //sizeof(data) only works for statically sized C/C++ arrays.
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ddd), ddd, GL_STATIC_DRAW); //sizeof(data) only works for statically sized C/C++ arrays.
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+
+    glGenBuffers(1, &g.ssb_edges);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, g.ssb_edges);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(edgeIdVector), &edgeIdVector[0], GL_STATIC_DRAW); //sizeof(data) only works for statically sized C/C++ arrays.
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
     //g.m_mesh.attach_buffer(uvData, 8, GL_ARRAY_BUFFER);
@@ -14746,6 +14785,7 @@ void GameObjectNew::update()
 {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssb_vertex);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, ssb_color);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, ssb_edges);
 }
 
 void GameObjectNew::cleanup()

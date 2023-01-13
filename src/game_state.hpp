@@ -19,6 +19,7 @@ struct GameState
     bool gRenderQuad = true;
     bool m_quit = false;
     bool m_space_down = false;
+    bool m_change_vertex = false;
 
 
     GameObjectNew m_game_object;
@@ -68,7 +69,6 @@ GameState::GameState()
 void GameState::update()
 {
     m_cs.use();
-    std::cout << "COMPUTE SHADER ID: " << m_cs.id << std::endl;
     m_game_object.update();
     if (left)
     {
@@ -86,11 +86,11 @@ void GameState::update()
     {
         m_camera_y -= 0.01f;
     }
-    std::cout << "AAAAAAAAAAAAAA" << std::endl;
-    glDispatchCompute((unsigned int)1, (unsigned int)1, 1);
-    std::cout << "BBBBBBBBBBBBBBB" << std::endl;
     // make sure writing to image has finished before read
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glUniform1i(7, int(m_change_vertex));
+    glDispatchCompute((unsigned int)100, (unsigned int)1, 1);
+    m_change_vertex = false;
 }
 
 void GameState::render()
@@ -109,7 +109,7 @@ void GameState::render()
 
     glm::mat4 mvp = m_proj_mat * m;
 
-    glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
+    glUniformMatrix4fv(3, 1, GL_FALSE, &mvp[0][0]);
 
     //m_game_object.m_texture.activate_texture(1);
     //glUniform1i(1, 1);
@@ -156,14 +156,14 @@ void GameState::handleEvent(SDL_Event event)
 
         if (mouse_wheel_dir > 0.0f)
         {
-            m_camera_zoom -= 0.1f;
+            m_camera_zoom -= 0.05f;
         }
         else
         {
-            m_camera_zoom += 0.1f;
+            m_camera_zoom += 0.05f;
         }
 
-        printf("zoom: %f\n", m_camera_zoom);
+        //printf("zoom: %f\n", m_camera_zoom);
     }
     break;
 
@@ -172,8 +172,8 @@ void GameState::handleEvent(SDL_Event event)
         int x = 0, y = 0;
         SDL_GetMouseState(&x, &y);
 
-        std::cout << "X MOTION: " << x << std::endl;
-        std::cout << "Y MOTION: " << y << std::endl;
+        //std::cout << "X MOTION: " << x << std::endl;
+        //std::cout << "Y MOTION: " << y << std::endl;
     }
     break;
 
@@ -192,6 +192,9 @@ void GameState::handleEvent(SDL_Event event)
             {
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             }
+            break;
+        case SDL_SCANCODE_E:
+            m_change_vertex = true;
             break;
         case SDL_SCANCODE_ESCAPE:
             m_quit = true;
