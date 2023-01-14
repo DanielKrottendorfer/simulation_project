@@ -62,7 +62,7 @@ struct GameState
 
 GameState::GameState()
 {
-    m_program = gl_util::Program("./src/shader/vs.glsl", "./src/shader/fs.glsl");
+    m_program = gl_util::Program("./src/shader/vs.glsl", "./src/shader/fs.glsl", "./src/shader/gs.glsl");
 
     m_cs = gl_util::ComputeShader("./src/shader/cs.glsl");
     m_cs_grv = gl_util::ComputeShader("./src/shader/c_grav.glsl");
@@ -72,8 +72,8 @@ GameState::GameState()
 
     m_game_object = GameObjectNew::new_cloth();
 
-    m_cam_pos = glm::vec3(-0.859062, 0.869206, 0.675616);
-    m_cam_dir = glm::vec3(0.736072, -0.173554, -0.654311);
+    m_cam_pos = glm::vec3(0.939481, 1.330551, 0.752915);
+    m_cam_dir = glm::vec3(-0.583577, -0.590341, -0.557754);
 }
 
 void GameState::update()
@@ -151,6 +151,7 @@ void GameState::render()
     glm::mat4 mvp = m_proj_mat * m;
 
     glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
+    glUniform3fv(1,1,&m_cam_pos[0]);
 
     // m_game_object.m_texture.activate_texture(1);
     // glUniform1i(1, 1);
@@ -213,10 +214,14 @@ void GameState::handleEvent(SDL_Event event)
         if (mouse_b_down) {
             float x = static_cast<float>(event.motion.xrel);
             m_cam_dir = rotate(m_cam_dir, -0.001f * x, glm::vec3(0.0, 1.0, 0.0));
+
+            
+            auto n_vec = rotate(m_cam_dir,1.57f,glm::vec3(0.0,1.0,0.0));
             float y = static_cast<float>(event.motion.yrel);
-            m_cam_dir = rotate(m_cam_dir, -0.001f * y, glm::vec3(1.0, 0.0, 0.0));
+            m_cam_dir = rotate(m_cam_dir, 0.001f * y, glm::vec3(n_vec.x, 0.0, n_vec.z));
         }
     }
+    break;
 
     case SDL_KEYDOWN:
     {

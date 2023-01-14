@@ -167,7 +167,7 @@ GameObjectNew GameObjectNew::new_cloth()
 
             if (t <= 0.013)
             {
-                edgeIdVector.push_back({x/4,y/4});
+                edgeIdVector.push_back({x / 4, y / 4});
             }
         }
         colorVec.push_back(1.0f);
@@ -189,6 +189,8 @@ GameObjectNew GameObjectNew::new_cloth()
     edg_ref_lens.push_back(0);
 
     float y_max = vertexDataVec4[1];
+    float x_max = vertexDataVec4[0];
+    float x_min = vertexDataVec4[0];
 
     for (int i = 0; i < v_size; i += 4)
     {
@@ -196,11 +198,19 @@ GameObjectNew GameObjectNew::new_cloth()
         {
             y_max = vertexDataVec4[i + 1];
         }
+        if (x_max < vertexDataVec4[i])
+        {
+            x_max = vertexDataVec4[i];
+        }
+        if (x_min > vertexDataVec4[i])
+        {
+            x_min = vertexDataVec4[i];
+        }
     }
 
     for (int i = 0; i < v_size; i += 4)
     {
-        if (y_max == vertexDataVec4[i + 1])
+        if (y_max == vertexDataVec4[i + 1] && (vertexDataVec4[i] == x_max || vertexDataVec4[i] == x_min))
         {
             stiff.push_back(1);
         }
@@ -244,9 +254,9 @@ GameObjectNew GameObjectNew::new_cloth()
     g.m_mesh.attach_buffer(&edg_ref_lens[0], edg_ref_lens.size(), GL_ARRAY_BUFFER);
     g.m_mesh.attach_buffer(&stiff[0], stiff.size(), GL_ARRAY_BUFFER);
     // velocity vector
-    g.m_mesh.attach_buffer<glm::vec4>(NULL, v_size/4, GL_ARRAY_BUFFER);
+    g.m_mesh.attach_buffer<glm::vec4>(NULL, v_size / 4, GL_ARRAY_BUFFER);
     // vertex temp vector
-    g.m_mesh.attach_buffer<glm::vec4>(NULL, v_size/4, GL_ARRAY_BUFFER);
+    g.m_mesh.attach_buffer<glm::vec4>(NULL, v_size / 4, GL_ARRAY_BUFFER);
 
     g.m_indexSize = sizeof(faceTriIds) / sizeof(faceTriIds[0]);
     g.m_mesh.attach_buffer(faceTriIds, g.m_indexSize, GL_ELEMENT_ARRAY_BUFFER);

@@ -18,7 +18,7 @@ layout(std430, binding = 5) buffer edgeIn {
 
 layout(std430, binding = 6) buffer vertexOut {
     vec4 cor[];
-};
+};  
 
 layout(std430, binding = 7) buffer refIn {
     uint[4] refs[];
@@ -41,13 +41,13 @@ void main() {
             if (stiff[edIn[j][0]] == 0) {
                 vertIn[gl_GlobalInvocationID.x] += cor[j];
             }
-            colIn[gl_GlobalInvocationID.x].x = 0.0;
         }
         else {
             if (stiff[edIn[j][1]] == 0) {
                 vertIn[gl_GlobalInvocationID.x] -= cor[j];
             }
-            colIn[gl_GlobalInvocationID.x].x = 0.0;
         };
     };
+
+
 }
