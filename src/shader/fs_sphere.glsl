@@ -13,7 +13,7 @@ layout(location = 1) uniform vec3 eye_pos;
 
 void main(){
 
-    vec3 col = vec3(1,1,1);
+    vec3 col = vec3(0,1,1);
     vec3 light = normalize(l);
 
     float diff_l = dot(light,fs_in.norm);

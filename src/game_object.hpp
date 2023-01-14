@@ -8,122 +8,9 @@
 #include "vertex_data.hpp"
 #include <array>
 
-struct Edge
-{
-    int edgeA;
-    int edgeB;
-};
-struct EdgeRefs
-{
-    int refA = 0;
-    int refB = 0;
-    int refC = 0;
-    int refD = 0;
-};
-
 struct GameObject
 {
-
     gl_util::Mesh m_mesh;
-    gl_util::Texture m_texture;
-
-    glm::vec2 m_position;
-    glm::vec2 m_heading;
-    glm::vec2 m_force;
-
-    float m_radius;
-    float m_mass;
-
-    static GameObject new_2d_sprite(const char *tex_path);
-    void calc_gravity(const GameObject &other);
-    void calc_init_speed(const GameObject &other);
-    void update();
-    void cleanup();
-};
-
-GameObject GameObject::new_2d_sprite(const char *tex_path)
-{
-    GameObject g;
-
-    GLfloat vertexData[] =
-        {
-            -0.5f, -0.5f,
-            0.5f, -0.5f,
-            0.5f, 0.5f,
-            -0.5f, 0.5f};
-
-    GLfloat uvData[] =
-        {
-            0.0f, 1.0f,
-            1.0f, 1.0f,
-            1.0f, 0.0f,
-            0.0f, 0.0f};
-
-    GLuint indexData[] = {0, 1, 2, 3};
-
-    g.m_mesh.init();
-    g.m_mesh.attach_buffer(vertexData, 8, GL_ARRAY_BUFFER);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), NULL);
-
-    g.m_mesh.attach_buffer(uvData, 8, GL_ARRAY_BUFFER);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), NULL);
-
-    g.m_mesh.attach_buffer(indexData, 4, GL_ELEMENT_ARRAY_BUFFER);
-
-    g.m_texture.load_png(tex_path);
-
-    g.m_position = glm::vec2(0.0f, 0.0f);
-    g.m_heading = glm::vec2(0.0f, 0.0f);
-    g.m_force = glm::vec2(0.0f, 0.0f);
-
-    g.m_radius = 1.0;
-    g.m_mass = 0.0;
-
-    return g;
-}
-
-void GameObject::calc_init_speed(const GameObject &other)
-{
-    float r = m_position.x - other.m_position.x;
-
-    float v = std::sqrt((G * other.m_mass) / r);
-
-    m_heading += glm::vec2(0.0, 1.0) * v;
-}
-
-void GameObject::calc_gravity(const GameObject &other)
-{
-    glm::vec2 dir = other.m_position - this->m_position;
-    float r = glm::length(dir);
-
-    dir = dir / r;
-
-    float f = G * ((this->m_mass * other.m_mass) / (r * r));
-
-    this->m_force += dir * f;
-}
-
-void GameObject::update()
-{
-    m_heading += m_force / m_mass;
-    m_position += m_heading;
-
-    m_force = glm::vec2(0.f, 0.f);
-}
-
-void GameObject::cleanup()
-{
-    m_mesh.cleanup();
-    m_texture.cleanup();
-}
-
-struct GameObjectNew
-{
-
-    gl_util::Mesh m_mesh;
-    gl_util::Texture m_texture;
 
     glm::vec3 m_position;
     unsigned int m_indexSize;
@@ -131,29 +18,22 @@ struct GameObjectNew
     int m_edges;
     int m_verteces;
 
-    static GameObjectNew new_cloth();
+    static GameObject new_cloth();
 
     void bind_shader_storage_buffer();
     void cleanup();
 };
 
-GameObjectNew GameObjectNew::new_cloth()
+GameObject GameObject::new_cloth()
 {
-    GameObjectNew g;
-
-    GLfloat uvData[] =
-        {
-            0.0f, 1.0f,
-            1.0f, 1.0f,
-            1.0f, 0.0f,
-            0.0f, 0.0f};
+    GameObject g;
 
     std::vector<std::array<int, 2>> edgeIdVector;
     std::vector<std::array<int, 4>> edg_refs;
     std::vector<int> edg_ref_lens;
     std::vector<int> stiff;
 
-    unsigned int v_size = sizeof(vertexDataVec4) / sizeof(vertexDataVec4[0]);
+    int v_size = sizeof(vertexDataVec4) / sizeof(vertexDataVec4[0]);
     for (int x = 0; x < (v_size - 4); x += 4)
     {
         for (int y = x + 4; y < v_size; y += 4)
@@ -222,7 +102,6 @@ GameObjectNew GameObjectNew::new_cloth()
     }
 
     GLfloat *v_data = vertexDataVec4;
-    std::cout << edgeIdVector.size() << std::endl;
 
     g.m_edges = edgeIdVector.size();
     g.m_verteces = v_size / 4;
@@ -255,7 +134,7 @@ GameObjectNew GameObjectNew::new_cloth()
     return g;
 }
 
-void GameObjectNew::bind_shader_storage_buffer()
+void GameObject::bind_shader_storage_buffer()
 {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_mesh.mVBOs[0]);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_mesh.mVBOs[1]);
@@ -267,8 +146,7 @@ void GameObjectNew::bind_shader_storage_buffer()
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, m_mesh.mVBOs[7]);
 }
 
-void GameObjectNew::cleanup()
+void GameObject::cleanup()
 {
     m_mesh.cleanup();
-    m_texture.cleanup();
 }

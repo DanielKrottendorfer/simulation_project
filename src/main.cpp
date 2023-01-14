@@ -80,8 +80,8 @@ bool init()
 
 				glEnable(GL_DEPTH_TEST);
 
-				glEnable(GL_DEBUG_OUTPUT);
-				glDebugMessageCallback(MessageCallback, 0);
+				// glEnable(GL_DEBUG_OUTPUT);
+				// glDebugMessageCallback(MessageCallback, 0);
 			}
 		}
 	}
@@ -144,8 +144,8 @@ int main(int argc, char *args[])
 
 			ImGui::Begin("Controls");
 
-			ImGui::SliderFloat3("ball_pos", &game_state.m_sphere_pos[0], -1.0, 1.0);
-			ImGui::SliderFloat("ball_rad", &game_state.m_sphere_rad, 0.01, 1.0);
+			ImGui::SliderFloat3("ball_pos", &game_state.m_sphere_pos[0], -1.0f, 1.0f);
+			ImGui::SliderFloat("ball_rad", &game_state.m_sphere_rad, 0.01f, 1.0f);
 			if (ImGui::Button("on/ff"))
 			{
 				game_state.m_sphere_active = !game_state.m_sphere_active;

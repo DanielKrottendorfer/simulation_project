@@ -23,7 +23,7 @@ struct GameState
     bool m_space_down = false;
     bool m_change_vertex = false;
 
-    GameObjectNew m_cloth;
+    GameObject m_cloth;
     gl_util::Mesh m_sphere;
     int m_sphere_vert_c = 0;
 
@@ -35,8 +35,6 @@ struct GameState
     gl_util::ComputeShader m_cs_cor;
     gl_util::ComputeShader m_cs_app;
     gl_util::ComputeShader m_cs_post;
-
-    glm::mat4 m_proj_mat;
 
     glm::vec3 m_cam_pos;
     glm::vec3 m_cam_dir;
@@ -51,7 +49,6 @@ struct GameState
     bool backward = false;
     bool up = false;
     bool down = false;
-
     bool mouse_b_down = false;
 
     size_t m_focus = 3;
@@ -81,12 +78,13 @@ GameState::GameState()
     m_cs_app = gl_util::ComputeShader("./src/shader/c_apply.glsl");
     m_cs_post = gl_util::ComputeShader("./src/shader/c_post.glsl");
 
-    m_cloth = GameObjectNew::new_cloth();
+    m_cloth = GameObject::new_cloth();
 
     std::vector<glm::vec3> out_vertices;
     std::vector<glm::vec3> out_normals;
 
-    if (!loadOBJ("./res/sphere.obj",out_vertices,out_normals)){
+    if (!loadOBJ("./res/sphere.obj", out_vertices, out_normals))
+    {
         std::cout << "ERROR: model did not load" << std::endl;
     }
 
@@ -97,7 +95,7 @@ GameState::GameState()
     m_sphere.attach_buffer(&out_normals[0], out_vertices.size(), GL_ARRAY_BUFFER);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL);
-    m_sphere_vert_c = out_vertices.size() ;
+    m_sphere_vert_c = out_vertices.size();
 
     m_cam_pos = glm::vec3(0.467810, 0.854653, 0.993788);
     m_cam_dir = glm::vec3(-0.322434, -0.179466, -0.929587);
@@ -127,11 +125,11 @@ void GameState::update()
     }
     if (up)
     {
-        m_cam_pos.y += 0.01;
+        m_cam_pos.y += 0.01f;
     }
     if (down)
     {
-        m_cam_pos.y -= 0.01;
+        m_cam_pos.y -= 0.01f;
     }
 
     m_cs.use();
@@ -184,32 +182,27 @@ void GameState::render()
 
     float ratio = static_cast<float>(m_window_width) / static_cast<float>(m_window_height);
 
-    // glm::mat4 m = glm::translate(glm::vec3(m_cloth.m_position.x, m_cloth.m_position.y, 0.0f));
     glm::mat4 view = glm::lookAtRH(m_cam_pos, m_cam_pos + m_cam_dir, glm::vec3(0.0, 1.0, 0.0));
-    m_proj_mat = glm::perspective(45.0f, ratio, 0.001f, 100.0f);
+    glm::mat4 proj = glm::perspective(45.0f, ratio, 0.001f, 100.0f);
 
-    glm::mat4 vp = m_proj_mat * view;
+    glm::mat4 vp = proj * view;
 
     glUniformMatrix4fv(0, 1, GL_FALSE, &vp[0][0]);
     glUniform3fv(1, 1, &m_cam_pos[0]);
 
-    // m_cloth.m_texture.activate_texture(1);
-    // glUniform1i(1, 1);
-
     m_cloth.m_mesh.bind();
     m_cloth.m_mesh.draw_elements(GL_TRIANGLES, m_cloth.m_indexSize);
 
-
-    if(m_sphere_active){
+    if (m_sphere_active)
+    {
         m_sphere_render_program.use();
 
-        vp = vp * glm::translate(m_sphere_pos) * glm::scale(glm::vec3(m_sphere_rad,m_sphere_rad,m_sphere_rad));
-        
+        vp = vp * glm::translate(m_sphere_pos) * glm::scale(glm::vec3(m_sphere_rad, m_sphere_rad, m_sphere_rad));
+
         glUniformMatrix4fv(0, 1, GL_FALSE, &vp[0][0]);
         glUniform3fv(1, 1, &m_cam_pos[0]);
 
         m_sphere.bind();
-
         m_sphere.draw_arrays(GL_TRIANGLES, m_sphere_vert_c);
     }
 
@@ -220,7 +213,17 @@ void GameState::render()
 void GameState::cleanup()
 {
     m_cloth.cleanup();
+    m_sphere.cleanup();
+
     m_cloth_render_program.cleanup();
+    m_sphere_render_program.cleanup();
+
+    m_cs.cleanup();
+    m_cs_grv.cleanup();
+    m_cs_ball.cleanup();
+    m_cs_cor.cleanup();
+    m_cs_app.cleanup();
+    m_cs_post.cleanup();
 }
 
 void GameState::handleEvent(SDL_Event event)
@@ -286,8 +289,6 @@ void GameState::handleEvent(SDL_Event event)
         switch (key)
         {
         case SDL_SCANCODE_Q:
-            std::cout << glm::to_string(m_cam_pos) << std::endl;
-            std::cout << glm::to_string(m_cam_dir) << std::endl;
             gRenderQuad = !gRenderQuad;
             if (!gRenderQuad)
             {
