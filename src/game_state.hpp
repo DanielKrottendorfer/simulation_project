@@ -116,25 +116,25 @@ void GameState::update()
     m_cs.use();
     m_game_object.update();
     glUniform1i(7, int(m_change_vertex));
-    glDispatchCompute((unsigned int)m_game_object.m_verteces, (unsigned int)1, 1);
+    glDispatchCompute(m_game_object.m_verteces, 1, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     m_cs_grv.use();
     m_game_object.update();
-    glDispatchCompute((unsigned int)m_game_object.m_verteces, (unsigned int)1, 1);
+    glDispatchCompute((m_game_object.m_verteces / 64)+1, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     m_change_vertex = false;
-    for (int i = 0; i < 100; ++i)
+    for (int i = 0; i < 1000; ++i)
     {
         m_cs_cor.use();
         m_game_object.update();
-        glDispatchCompute((unsigned int)m_game_object.m_edges, (unsigned int)1, 1);
+        glDispatchCompute((m_game_object.m_edges / 64)+1, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         m_cs_app.use();
         m_game_object.update();
-        glDispatchCompute((unsigned int)m_game_object.m_verteces, (unsigned int)1, 1);
+        glDispatchCompute((m_game_object.m_verteces / 64)+1, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         if (m_sphere_active)
@@ -143,7 +143,7 @@ void GameState::update()
             glUniform3fv(0, 1, &m_sphere_pos[0]);
             glUniform1fv(1, 1, &m_sphere_rad);
             m_game_object.update();
-            glDispatchCompute((unsigned int)m_game_object.m_verteces, (unsigned int)1, 1);
+            glDispatchCompute((m_game_object.m_verteces / 64)+1, 1, 1);
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
 
@@ -151,7 +151,7 @@ void GameState::update()
 
     m_cs_post.use();
     m_game_object.update();
-    glDispatchCompute((unsigned int)m_game_object.m_verteces, (unsigned int)1, 1);
+    glDispatchCompute((m_game_object.m_verteces / 64)+1, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
