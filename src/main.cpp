@@ -80,8 +80,8 @@ bool init()
 
 				glEnable(GL_DEPTH_TEST);
 
-				// glEnable(GL_DEBUG_OUTPUT);
-				// glDebugMessageCallback(MessageCallback, 0);
+				glEnable(GL_DEBUG_OUTPUT);
+				glDebugMessageCallback(MessageCallback, 0);
 			}
 		}
 	}

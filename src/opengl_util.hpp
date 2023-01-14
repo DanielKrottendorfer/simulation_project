@@ -153,6 +153,11 @@ namespace gl_util
         {
             glDrawElements(mode, count, GL_UNSIGNED_INT, NULL);
         }
+        
+        void draw_arrays(GLenum mode, GLsizei count)
+        {
+            glDrawArrays(mode,0,count);
+        }
     };
 
     struct Program

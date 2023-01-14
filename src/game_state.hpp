@@ -14,6 +14,7 @@
 #include "opengl_util.hpp"
 #include "game_object.hpp"
 #include "settings.hpp"
+#include "obj_loader.hpp"
 
 struct GameState
 {
@@ -22,9 +23,12 @@ struct GameState
     bool m_space_down = false;
     bool m_change_vertex = false;
 
-    GameObjectNew m_game_object;
+    GameObjectNew m_cloth;
+    gl_util::Mesh m_sphere;
+    int m_sphere_vert_c = 0;
 
-    gl_util::Program m_program;
+    gl_util::Program m_cloth_render_program;
+    gl_util::Program m_sphere_render_program;
     gl_util::ComputeShader m_cs;
     gl_util::ComputeShader m_cs_grv;
     gl_util::ComputeShader m_cs_ball;
@@ -67,7 +71,8 @@ struct GameState
 
 GameState::GameState()
 {
-    m_program = gl_util::Program("./src/shader/vs.glsl", "./src/shader/fs.glsl", "./src/shader/gs.glsl");
+    m_cloth_render_program = gl_util::Program("./src/shader/vs.glsl", "./src/shader/fs.glsl", "./src/shader/gs.glsl");
+    m_sphere_render_program = gl_util::Program("./src/shader/vs_sphere.glsl", "./src/shader/fs_sphere.glsl");
 
     m_cs = gl_util::ComputeShader("./src/shader/cs.glsl");
     m_cs_grv = gl_util::ComputeShader("./src/shader/c_grav.glsl");
@@ -76,7 +81,23 @@ GameState::GameState()
     m_cs_app = gl_util::ComputeShader("./src/shader/c_apply.glsl");
     m_cs_post = gl_util::ComputeShader("./src/shader/c_post.glsl");
 
-    m_game_object = GameObjectNew::new_cloth();
+    m_cloth = GameObjectNew::new_cloth();
+
+    std::vector<glm::vec3> out_vertices;
+    std::vector<glm::vec3> out_normals;
+
+    if (!loadOBJ("./res/sphere.obj",out_vertices,out_normals)){
+        std::cout << "ERROR: model did not load" << std::endl;
+    }
+
+    m_sphere.init();
+    m_sphere.attach_buffer(&out_vertices[0], out_vertices.size(), GL_ARRAY_BUFFER);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL);
+    m_sphere.attach_buffer(&out_normals[0], out_vertices.size(), GL_ARRAY_BUFFER);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL);
+    m_sphere_vert_c = out_vertices.size() ;
 
     m_cam_pos = glm::vec3(0.467810, 0.854653, 0.993788);
     m_cam_dir = glm::vec3(-0.322434, -0.179466, -0.929587);
@@ -114,27 +135,27 @@ void GameState::update()
     }
 
     m_cs.use();
-    m_game_object.bind_shader_storage_buffer();
+    m_cloth.bind_shader_storage_buffer();
     glUniform1i(7, int(m_change_vertex));
-    glDispatchCompute(m_game_object.m_verteces, 1, 1);
+    glDispatchCompute(m_cloth.m_verteces, 1, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     m_cs_grv.use();
-    m_game_object.bind_shader_storage_buffer();
-    glDispatchCompute((m_game_object.m_verteces / 64) + 1, 1, 1);
+    m_cloth.bind_shader_storage_buffer();
+    glDispatchCompute((m_cloth.m_verteces / 64) + 1, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     m_change_vertex = false;
     for (int i = 0; i < 1000; ++i)
     {
         m_cs_cor.use();
-        m_game_object.bind_shader_storage_buffer();
-        glDispatchCompute((m_game_object.m_edges / 64) + 1, 1, 1);
+        m_cloth.bind_shader_storage_buffer();
+        glDispatchCompute((m_cloth.m_edges / 64) + 1, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         m_cs_app.use();
-        m_game_object.bind_shader_storage_buffer();
-        glDispatchCompute((m_game_object.m_verteces / 64) + 1, 1, 1);
+        m_cloth.bind_shader_storage_buffer();
+        glDispatchCompute((m_cloth.m_verteces / 64) + 1, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         if (m_sphere_active)
@@ -142,15 +163,15 @@ void GameState::update()
             m_cs_ball.use();
             glUniform3fv(0, 1, &m_sphere_pos[0]);
             glUniform1fv(1, 1, &m_sphere_rad);
-            m_game_object.bind_shader_storage_buffer();
-            glDispatchCompute((m_game_object.m_verteces / 64) + 1, 1, 1);
+            m_cloth.bind_shader_storage_buffer();
+            glDispatchCompute((m_cloth.m_verteces / 64) + 1, 1, 1);
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
     }
 
     m_cs_post.use();
-    m_game_object.bind_shader_storage_buffer();
-    glDispatchCompute((m_game_object.m_verteces / 64) + 1, 1, 1);
+    m_cloth.bind_shader_storage_buffer();
+    glDispatchCompute((m_cloth.m_verteces / 64) + 1, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
@@ -159,32 +180,47 @@ void GameState::render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.f, 0.f, 0.1f, 1.f);
 
-    m_program.use();
+    m_cloth_render_program.use();
 
     float ratio = static_cast<float>(m_window_width) / static_cast<float>(m_window_height);
 
-    // glm::mat4 m = glm::translate(glm::vec3(m_game_object.m_position.x, m_game_object.m_position.y, 0.0f));
-    glm::mat4 m = glm::lookAtRH(m_cam_pos, m_cam_pos + m_cam_dir, glm::vec3(0.0, 1.0, 0.0));
+    // glm::mat4 m = glm::translate(glm::vec3(m_cloth.m_position.x, m_cloth.m_position.y, 0.0f));
+    glm::mat4 view = glm::lookAtRH(m_cam_pos, m_cam_pos + m_cam_dir, glm::vec3(0.0, 1.0, 0.0));
     m_proj_mat = glm::perspective(45.0f, ratio, 0.001f, 100.0f);
 
-    glm::mat4 mvp = m_proj_mat * m;
+    glm::mat4 vp = m_proj_mat * view;
 
-    glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
+    glUniformMatrix4fv(0, 1, GL_FALSE, &vp[0][0]);
     glUniform3fv(1, 1, &m_cam_pos[0]);
 
-    // m_game_object.m_texture.activate_texture(1);
+    // m_cloth.m_texture.activate_texture(1);
     // glUniform1i(1, 1);
 
-    m_game_object.m_mesh.bind();
-    m_game_object.m_mesh.draw_elements(GL_TRIANGLES, m_game_object.m_indexSize);
+    m_cloth.m_mesh.bind();
+    m_cloth.m_mesh.draw_elements(GL_TRIANGLES, m_cloth.m_indexSize);
+
+
+    if(m_sphere_active){
+        m_sphere_render_program.use();
+
+        vp = vp * glm::translate(m_sphere_pos) * glm::scale(glm::vec3(m_sphere_rad,m_sphere_rad,m_sphere_rad));
+        
+        glUniformMatrix4fv(0, 1, GL_FALSE, &vp[0][0]);
+        glUniform3fv(1, 1, &m_cam_pos[0]);
+
+        m_sphere.bind();
+
+        m_sphere.draw_arrays(GL_TRIANGLES, m_sphere_vert_c);
+    }
+
     glBindVertexArray(0);
     glUseProgram(NULL);
 }
 
 void GameState::cleanup()
 {
-    m_game_object.cleanup();
-    m_program.cleanup();
+    m_cloth.cleanup();
+    m_cloth_render_program.cleanup();
 }
 
 void GameState::handleEvent(SDL_Event event)
