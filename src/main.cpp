@@ -123,7 +123,6 @@ int main(int argc, char *args[])
 
 		ImVec2 window_pos = ImVec2(0.0f, 0.0f);
 
-		int delay = 100;
 		int g_exp = -11;
 
 		while (!game_state.m_quit)

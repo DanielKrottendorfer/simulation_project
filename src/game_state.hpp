@@ -18,7 +18,7 @@
 
 struct GameState
 {
-    bool gRenderQuad = true;
+    bool m_gRenderQuad = true;
     bool m_quit = false;
     bool m_space_down = false;
     bool m_pull_vertex = false;
@@ -54,6 +54,8 @@ struct GameState
     bool mouse_b_down = false;
 
     size_t m_focus = 3;
+
+    int loops = 0;
 
     GLsizei m_window_width = SCREEN_WIDTH;
     GLsizei m_window_height = SCREEN_HEIGHT;
@@ -169,6 +171,11 @@ void GameState::update()
             glDispatchCompute((m_cloth.m_verteces / 64) + 1, 1, 1);
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
+
+        if(temp.y < 0.0 && m_game_objects[3].m_position.y > 0.0)
+            printf("earth took %d calculated seconds to finish an orbit",loops);
+        
+        loops += 1;
     }
 
     m_cs_post.use();
