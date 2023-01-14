@@ -8,26 +8,51 @@
 #include <glm/ext.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 #include <SDL.h>
 
 #include "opengl_util.hpp"
 #include "game_object.hpp"
 #include "settings.hpp"
+#include "obj_loader.hpp"
 
 struct GameState
 {
     bool m_gRenderQuad = true;
     bool m_quit = false;
     bool m_space_down = false;
+    bool m_pull_vertex = false;
 
+    GameObject m_cloth;
+    gl_util::Mesh m_sphere;
+    int m_sphere_vert_c = 0;
 
-    std::vector<GameObject> m_game_objects;
+    gl_util::Program m_cloth_render_program;
+    gl_util::Program m_sphere_render_program;
+    gl_util::ComputeShader m_cs_pull;
+    gl_util::ComputeShader m_cs_grvity;
+    gl_util::ComputeShader m_cs_sphere;
+    gl_util::ComputeShader m_cs_correction;
+    gl_util::ComputeShader m_cs_apply_cor;
+    gl_util::ComputeShader m_cs_post;
 
-    gl_util::Program m_program;
+    glm::vec3 m_cam_pos;
+    glm::vec3 m_cam_dir;
 
-    glm::mat4 m_proj_mat;
+    bool m_sphere_active = false;
+    glm::vec3 m_sphere_pos;
+    float m_sphere_rad;
 
-    float m_zoom = 4998.0;
+    int m_simulation_steps = 1000;
+
+    bool left = false;
+    bool right = false;
+    bool forward = false;
+    bool backward = false;
+    bool up = false;
+    bool down = false;
+    bool mouse_b_down = false;
+
     size_t m_focus = 3;
 
     int loops = 0;
@@ -47,91 +72,104 @@ struct GameState
 
 GameState::GameState()
 {
-    m_program = gl_util::Program("./src/shader/vs.glsl", "./src/shader/fs.glsl");
+    m_cloth_render_program = gl_util::Program("./src/shader/vs.glsl", "./src/shader/fs.glsl", "./src/shader/gs.glsl");
+    m_sphere_render_program = gl_util::Program("./src/shader/vs_sphere.glsl", "./src/shader/fs_sphere.glsl");
 
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/sun.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/mercury.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/venus.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/earth.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/moon.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/mars.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/jupiter.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/saturn.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/uranus.png"));
-    m_game_objects.push_back(GameObject::new_2d_sprite("./res/neptune.png"));
+    m_cs_pull = gl_util::ComputeShader("./src/shader/c_pull.glsl");
+    m_cs_grvity = gl_util::ComputeShader("./src/shader/c_gravity.glsl");
+    m_cs_sphere = gl_util::ComputeShader("./src/shader/c_sphere.glsl");
+    m_cs_correction = gl_util::ComputeShader("./src/shader/c_correction.glsl");
+    m_cs_apply_cor = gl_util::ComputeShader("./src/shader/c_apply.glsl");
+    m_cs_post = gl_util::ComputeShader("./src/shader/c_post.glsl");
 
+    m_cloth = GameObject::new_cloth();
 
-    m_game_objects[1].m_position.x = 63.81f;
-    m_game_objects[2].m_position.x = 107.59f;
-    m_game_objects[3].m_position.x = 151.48f;
-    m_game_objects[4].m_position.x = 151.48f + 0.38f;
-    m_game_objects[5].m_position.x = 248.84f;
-    m_game_objects[6].m_position.x = 755.91f;
-    m_game_objects[7].m_position.x = 1487.8f;
-    m_game_objects[8].m_position.x = 2954.6f;
-    m_game_objects[9].m_position.x = 4475.5f;
+    std::vector<glm::vec3> out_vertices;
+    std::vector<glm::vec3> out_normals;
 
-
-    m_game_objects[0].m_radius = 696.342f;
-    m_game_objects[1].m_radius = 2.44f;
-    m_game_objects[2].m_radius = 6.052f;
-    m_game_objects[3].m_radius = 6.371f;
-    m_game_objects[4].m_radius = 1.8f;
-    m_game_objects[5].m_radius = 3.390f;
-    m_game_objects[6].m_radius = 69.911f;
-    m_game_objects[7].m_radius = 58.232f;
-    m_game_objects[8].m_radius = 25.362f;
-    m_game_objects[9].m_radius = 24.622f;
-
-
-    m_game_objects[0].m_mass = 333000.f;
-    m_game_objects[1].m_mass = .055f;
-    m_game_objects[2].m_mass = .815f;
-    m_game_objects[3].m_mass = 1.0f;
-    m_game_objects[4].m_mass = .012f;
-    m_game_objects[5].m_mass = .107f;
-    m_game_objects[6].m_mass = 317.8f;
-    m_game_objects[7].m_mass = 95.16f;
-    m_game_objects[8].m_mass = 14.54f;
-    m_game_objects[9].m_mass = 17.15f;
-
-
-    for(auto& go: m_game_objects){
-        go.m_radius /= 5.0f;
-        //go.m_mass *= 1.0f;
+    if (!loadOBJ("./res/sphere.obj", out_vertices, out_normals))
+    {
+        std::cout << "ERROR: model did not load" << std::endl;
     }
 
-    m_game_objects[4].calc_init_speed(m_game_objects[3]);
+    m_sphere.init();
+    m_sphere.attach_buffer(&out_vertices[0], out_vertices.size(), GL_ARRAY_BUFFER);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL);
+    m_sphere.attach_buffer(&out_normals[0], out_vertices.size(), GL_ARRAY_BUFFER);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL);
+    m_sphere_vert_c = out_vertices.size();
 
-    for (size_t i = 1; i < m_game_objects.size(); ++i)
-        m_game_objects[i].calc_init_speed(m_game_objects[0]);
+    m_cam_pos = glm::vec3(0.467810, 0.854653, 0.993788);
+    m_cam_dir = glm::vec3(-0.322434, -0.179466, -0.929587);
 
-    float temp = 5000.0f - m_zoom;
-
-    m_proj_mat = glm::ortho(-temp, temp, -temp, temp, -2.0f, 2.0f);
+    m_sphere_pos = glm::vec3(0.0, 0.7, -0.4);
+    m_sphere_rad = 0.1f;
 }
 
 void GameState::update()
 {
-    for (int i_ = 0; i_ < 10000; ++i_) {
+    auto n_vec = rotate(m_cam_dir, 1.57f, glm::vec3(0.0, 1.0, 0.0));
+    if (left)
+    {
+        m_cam_pos += n_vec * 0.01f;
+    }
+    if (right)
+    {
+        m_cam_pos -= n_vec * 0.01f;
+    }
+    if (forward)
+    {
+        m_cam_pos += m_cam_dir * 0.01f;
+    }
+    if (backward)
+    {
+        m_cam_pos -= m_cam_dir * 0.01f;
+    }
+    if (up)
+    {
+        m_cam_pos.y += 0.01f;
+    }
+    if (down)
+    {
+        m_cam_pos.y -= 0.01f;
+    }
 
-        for (size_t i = 1; i < m_game_objects.size(); ++i)
+    if (m_pull_vertex)
+    {
+        m_cs_pull.use();
+        m_cloth.bind_shader_storage_buffer();
+        glDispatchCompute(m_cloth.m_verteces, 1, 1);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        m_pull_vertex = false;
+    }
+
+    m_cs_grvity.use();
+    m_cloth.bind_shader_storage_buffer();
+    glDispatchCompute((m_cloth.m_verteces / 64) + 1, 1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    for (int i = 0; i < m_simulation_steps; ++i)
+    {
+        m_cs_correction.use();
+        m_cloth.bind_shader_storage_buffer();
+        glDispatchCompute((m_cloth.m_edges / 64) + 1, 1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+        m_cs_apply_cor.use();
+        m_cloth.bind_shader_storage_buffer();
+        glDispatchCompute((m_cloth.m_verteces / 64) + 1, 1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+        if (m_sphere_active)
         {
-            for (size_t y = 0; y < m_game_objects.size(); ++y)
-            {
-
-                if (i == y)
-                    continue;
-
-                m_game_objects[i].calc_gravity(m_game_objects[y]);
-            }
-        }
-        
-        glm::vec2 temp = m_game_objects[3].m_position;
-
-        for (size_t i = 1; i < m_game_objects.size(); ++i)
-        {
-            m_game_objects[i].update();
+            m_cs_sphere.use();
+            glUniform3fv(0, 1, &m_sphere_pos[0]);
+            glUniform1fv(1, 1, &m_sphere_rad);
+            m_cloth.bind_shader_storage_buffer();
+            glDispatchCompute((m_cloth.m_verteces / 64) + 1, 1, 1);
+            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
 
         if(temp.y < 0.0 && m_game_objects[3].m_position.y > 0.0)
@@ -140,65 +178,67 @@ void GameState::update()
         loops += 1;
     }
 
-
-    if (m_game_objects[3].m_position.y == 0.0)
-        printf("cycles: %d",loops);
-
-
+    m_cs_post.use();
+    m_cloth.bind_shader_storage_buffer();
+    glDispatchCompute((m_cloth.m_verteces / 64) + 1, 1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
 void GameState::render()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.f, 0.f, 0.1f, 1.f);
-    if (m_gRenderQuad)
+
+    m_cloth_render_program.use();
+
+    float ratio = static_cast<float>(m_window_width) / static_cast<float>(m_window_height);
+
+    glm::mat4 view = glm::lookAtRH(m_cam_pos, m_cam_pos + m_cam_dir, glm::vec3(0.0, 1.0, 0.0));
+    glm::mat4 proj = glm::perspective(45.0f, ratio, 0.001f, 100.0f);
+
+    glm::mat4 vp = proj * view;
+
+    glUniformMatrix4fv(0, 1, GL_FALSE, &vp[0][0]);
+    glUniform3fv(1, 1, &m_cam_pos[0]);
+
+    m_cloth.m_mesh.bind();
+    m_cloth.m_mesh.draw_elements(GL_TRIANGLES, m_cloth.m_indexSize);
+
+    if (m_sphere_active)
     {
-        m_program.use();
+        m_sphere_render_program.use();
 
-        float temp = 5000.0f - m_zoom;
+        vp = vp * glm::translate(m_sphere_pos) * glm::scale(glm::vec3(m_sphere_rad, m_sphere_rad, m_sphere_rad));
 
-        glm::vec2 pp = m_game_objects[m_focus].m_position;
+        glUniformMatrix4fv(0, 1, GL_FALSE, &vp[0][0]);
+        glUniform3fv(1, 1, &m_cam_pos[0]);
 
-
-        float ratio = static_cast<float>(m_window_height) / static_cast<float>(m_window_width);
-        m_proj_mat = glm::ortho(-temp + pp.x, temp + pp.x, (-temp*ratio + pp.y),  (temp*ratio + pp.y), -2.0f, 2.0f);
-
-        for (auto go : m_game_objects)
-        {
-
-            glm::mat4 m = glm::translate(glm::vec3(go.m_position.x, go.m_position.y, 0.0f));
-            glm::mat4 s = glm::scale(glm::vec3(go.m_radius, go.m_radius, go.m_radius));
-
-            glm::mat4 mvp = m_proj_mat * m * s;
-
-            glUniformMatrix4fv(0, 1, GL_FALSE, &mvp[0][0]);
-
-            go.m_texture.activate_texture(1);
-            glUniform1i(1, 1);
-
-            go.m_mesh.bind();
-            go.m_mesh.draw_elements(GL_TRIANGLE_FAN, 4);
-        }
-
-        glUseProgram(NULL);
+        m_sphere.bind();
+        m_sphere.draw_arrays(GL_TRIANGLES, m_sphere_vert_c);
     }
+
+    glBindVertexArray(0);
+    glUseProgram(NULL);
 }
 
 void GameState::cleanup()
 {
-    for (auto go : m_game_objects)
-    {
-        go.cleanup();
-    }
+    m_cloth.cleanup();
+    m_sphere.cleanup();
 
-    m_program.cleanup();
+    m_cloth_render_program.cleanup();
+    m_sphere_render_program.cleanup();
+
+    m_cs_pull.cleanup();
+    m_cs_grvity.cleanup();
+    m_cs_sphere.cleanup();
+    m_cs_correction.cleanup();
+    m_cs_apply_cor.cleanup();
+    m_cs_post.cleanup();
 }
 
 void GameState::handleEvent(SDL_Event event)
 {
-    // int x = 0, y = 0;
-    // SDL_GetMouseState(&x, &y);
-
     switch (event.type)
     {
     case SDL_QUIT:
@@ -221,32 +261,37 @@ void GameState::handleEvent(SDL_Event event)
     }
     break;
 
-    case SDL_MOUSEWHEEL:
+    case SDL_MOUSEBUTTONDOWN:
     {
-        auto mouse_wheel_dir = event.wheel.y;
-
-        if (mouse_wheel_dir > 0.0f)
+        if (event.button.button == SDL_BUTTON_RIGHT)
         {
-            if (m_zoom < 4900.0f)
-            {
-                m_zoom += 100.0f;
-            }
+            mouse_b_down = true;
+            SDL_SetRelativeMouseMode(SDL_TRUE);
         }
-        else
-        {
-            if (m_zoom > 100.0f)
-            {
-                m_zoom -= 100.0f;
-            }
-        }
-
-        printf("zoom: %f\n", m_zoom);
-
-        float temp = 5000.0f - m_zoom;
-
-        m_proj_mat = glm::ortho(-temp, temp, -temp, temp, -2.0f, 2.0f);
     }
+    break;
+    case SDL_MOUSEBUTTONUP:
+    {
+        if (event.button.button == SDL_BUTTON_RIGHT)
+        {
+            mouse_b_down = false;
+            SDL_SetRelativeMouseMode(SDL_FALSE);
+        }
+    }
+    break;
 
+    case SDL_MOUSEMOTION:
+    {
+        if (mouse_b_down)
+        {
+            float x = static_cast<float>(event.motion.xrel);
+            m_cam_dir = rotate(m_cam_dir, -0.001f * x, glm::vec3(0.0, 1.0, 0.0));
+
+            auto n_vec = rotate(m_cam_dir, 1.57f, glm::vec3(0.0, 1.0, 0.0));
+            float y = static_cast<float>(event.motion.yrel);
+            m_cam_dir = rotate(m_cam_dir, 0.001f * y, glm::vec3(n_vec.x, 0.0, n_vec.z));
+        }
+    }
     break;
 
     case SDL_KEYDOWN:
@@ -255,25 +300,68 @@ void GameState::handleEvent(SDL_Event event)
         switch (key)
         {
         case SDL_SCANCODE_Q:
-            m_gRenderQuad = !m_gRenderQuad;
+            gRenderQuad = !gRenderQuad;
+            if (!gRenderQuad)
+            {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            }
+            else
+            {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            }
+            break;
+        case SDL_SCANCODE_E:
+            m_pull_vertex = true;
             break;
         case SDL_SCANCODE_ESCAPE:
             m_quit = true;
             break;
-        case SDL_SCANCODE_SPACE:
-            m_space_down = true;
+        case SDL_SCANCODE_W:
+            forward = true;
             break;
-        case SDL_SCANCODE_LEFT:
-            if (m_focus > 0)
-                m_focus--;
-            else
-                m_focus = m_game_objects.size() -1;
+        case SDL_SCANCODE_A:
+            left = true;
             break;
-        case SDL_SCANCODE_RIGHT:
-            if (m_focus < m_game_objects.size() -1 )
-                m_focus++;
-            else
-                m_focus = 0;                       
+        case SDL_SCANCODE_S:
+            backward = true;
+            break;
+        case SDL_SCANCODE_D:
+            right = true;
+            break;
+        case SDL_SCANCODE_Z:
+            up = true;
+            break;
+        case SDL_SCANCODE_X:
+            down = true;
+            break;
+        default:
+            break;
+        }
+    }
+    break;
+
+    case SDL_KEYUP:
+    {
+        auto key = event.key.keysym.scancode;
+        switch (key)
+        {
+        case SDL_SCANCODE_W:
+            forward = false;
+            break;
+        case SDL_SCANCODE_A:
+            left = false;
+            break;
+        case SDL_SCANCODE_S:
+            backward = false;
+            break;
+        case SDL_SCANCODE_D:
+            right = false;
+            break;
+        case SDL_SCANCODE_Z:
+            up = false;
+            break;
+        case SDL_SCANCODE_X:
+            down = false;
             break;
         default:
             break;
@@ -285,8 +373,3 @@ void GameState::handleEvent(SDL_Event event)
         break;
     }
 }
-
-void adj_G(int exp){
-    G = 6.65f * powf(10.0,exp);
-}
-

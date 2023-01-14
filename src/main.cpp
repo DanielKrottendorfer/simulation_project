@@ -47,11 +47,11 @@ bool init()
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
-		SDL_WindowFlags w_flags = (SDL_WindowFlags) (SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+		SDL_WindowFlags w_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 
-		gWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, w_flags);
+		gWindow = SDL_CreateWindow("Cloth Simulation", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, w_flags);
 		if (gWindow == NULL)
 		{
 			printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
@@ -78,16 +78,10 @@ bool init()
 					printf("Warning: Unable to set VSync! SDL Error: %s\n", SDL_GetError());
 				}
 
-				glDisable(GL_DEPTH_TEST);
-				glDisable(GL_CULL_FACE);
+				glEnable(GL_DEPTH_TEST);
 
-				glEnable(GL_BLEND);
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-#ifdef DEBUG_CALLBACK
-				glEnable(GL_DEBUG_OUTPUT);
-				glDebugMessageCallback(MessageCallback, 0);
-#endif
+				// glEnable(GL_DEBUG_OUTPUT);
+				// glDebugMessageCallback(MessageCallback, 0);
 			}
 		}
 	}
@@ -114,37 +108,31 @@ int main(int argc, char *args[])
 
 		GameState game_state = GameState();
 
-		
 		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		ImGuiIO &io = ImGui::GetIO();
+		(void)io;
 		ImGui::StyleColorsDark();
 		ImGui_ImplSDL2_InitForOpenGL(gWindow, gContext);
-    	const char* glsl_version = "#version 330";
+		const char *glsl_version = "#version 460";
 		ImGui_ImplOpenGL3_Init(glsl_version);
-
 
 		bool quit = false;
 
 		SDL_Event event;
 		SDL_StartTextInput();
 
-		ImVec2 window_pos = ImVec2(0.0f,0.0f);
+		ImVec2 window_pos = ImVec2(0.0f, 0.0f);
 
-		int zoom = game_state.m_zoom;
-		int delay = 0;
 		int g_exp = -11;
-
-		adj_G(g_exp);
 
 		while (!game_state.m_quit)
 		{
 			while (SDL_PollEvent(&event) != 0)
 			{
-				
-            	ImGui_ImplSDL2_ProcessEvent(&event);
+
+				ImGui_ImplSDL2_ProcessEvent(&event);
 				game_state.handleEvent(event);
 			}
-
 
 			game_state.update();
 			game_state.render();
@@ -152,25 +140,24 @@ int main(int argc, char *args[])
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplSDL2_NewFrame();
 			ImGui::NewFrame();
-			
-			zoom = game_state.m_zoom;
+
 			ImGui::Begin("Controls");
-			ImGui::SetWindowPos(window_pos);
-			ImGui::SliderInt("zoom",&zoom,1,4998);
-			game_state.m_zoom = zoom;
-			ImGui::SliderInt("delay",&delay,0,100);
-			if (ImGui::SliderInt("g", &g_exp, -11, 0)) {
-				adj_G(g_exp);
-			};
+
+			ImGui::SliderInt("simulation_steps",&game_state.m_simulation_steps,1,10000);
+
+			ImGui::SliderFloat3("sphere_pos", &game_state.m_sphere_pos[0], -1.0f, 1.0f);
+			ImGui::SliderFloat("sphere_rad", &game_state.m_sphere_rad, 0.01f, 1.0f);
+			if (ImGui::Button("on/ff"))
+			{
+				game_state.m_sphere_active = !game_state.m_sphere_active;
+			}
+
 			ImGui::End();
+			ImGui::Render();
 
-        	ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-			
 			SDL_GL_SwapWindow(gWindow);
-			std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-
 		}
 
 		ImGui_ImplOpenGL3_Shutdown();
