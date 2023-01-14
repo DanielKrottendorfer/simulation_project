@@ -22,20 +22,17 @@ void main()
     n = normalize(n);
 
     gl_Position =  proj * gl_in[0].gl_Position;
-    //gs_out.color = vs_out[0].color;
-    gs_out.norm = n;
     gs_out.pos = gl_in[0].gl_Position.xyz;
+    gs_out.norm = n;
     EmitVertex();
 
     gl_Position =  proj * gl_in[1].gl_Position;
     gs_out.pos = gl_in[1].gl_Position.xyz;
-    //gs_out.color = vs_out[1].color;
     gs_out.norm = n;
     EmitVertex();
     
     gl_Position =  proj * gl_in[2].gl_Position;
     gs_out.pos = gl_in[2].gl_Position.xyz;
-    //gs_out.color = vs_out[2].color;
     gs_out.norm = n;
     EmitVertex();
 

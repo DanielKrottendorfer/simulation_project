@@ -8,10 +8,6 @@ layout(std430, binding = 3) buffer vertexIn{
     vec4 vertIn[];
 };
 
-layout(std430, binding = 4) buffer colorIn{
-    vec4 colIn[];
-};
-
 layout(std430, binding = 5) buffer edgeIn{
     uint[2] edIn[];
 };

@@ -133,7 +133,7 @@ struct GameObjectNew
 
     static GameObjectNew new_cloth();
 
-    void update();
+    void bind_shader_storage_buffer();
     void cleanup();
 };
 
@@ -149,8 +149,6 @@ GameObjectNew GameObjectNew::new_cloth()
             0.0f, 0.0f};
 
     std::vector<std::array<int, 2>> edgeIdVector;
-    std::vector<GLfloat> colorVec;
-
     std::vector<std::array<int, 4>> edg_refs;
     std::vector<int> edg_ref_lens;
     std::vector<int> stiff;
@@ -170,19 +168,11 @@ GameObjectNew GameObjectNew::new_cloth()
                 edgeIdVector.push_back({x / 4, y / 4});
             }
         }
-        colorVec.push_back(1.0f);
-        colorVec.push_back(0.0f);
-        colorVec.push_back(1.0f);
-        colorVec.push_back(1.0f);
 
         std::array<int, 4> ab{{0, 0, 0, 0}};
         edg_refs.push_back(ab);
         edg_ref_lens.push_back(0);
     }
-    colorVec.push_back(1.0f);
-    colorVec.push_back(0.0f);
-    colorVec.push_back(1.0f);
-    colorVec.push_back(1.0f);
 
     std::array<int, 4> a = {0, 0, 0, 0};
     edg_refs.push_back(a);
@@ -242,10 +232,6 @@ GameObjectNew GameObjectNew::new_cloth()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
 
-    g.m_mesh.attach_buffer(&colorVec[0], v_size, GL_ARRAY_BUFFER);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
-
     g.m_mesh.attach_buffer(&edgeIdVector[0], edgeIdVector.size(), GL_ARRAY_BUFFER);
 
     // correction vector
@@ -258,27 +244,27 @@ GameObjectNew GameObjectNew::new_cloth()
     // vertex temp vector
     g.m_mesh.attach_buffer<glm::vec4>(NULL, v_size / 4, GL_ARRAY_BUFFER);
 
+
+    // element buffer
     g.m_indexSize = sizeof(faceTriIds) / sizeof(faceTriIds[0]);
     g.m_mesh.attach_buffer(faceTriIds, g.m_indexSize, GL_ELEMENT_ARRAY_BUFFER);
+
 
     g.m_position = glm::vec3(0.0f, 0.0f, 0.0f);
 
     return g;
 }
 
-void GameObjectNew::update()
+void GameObjectNew::bind_shader_storage_buffer()
 {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_mesh.mVBOs[0]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_mesh.mVBOs[1]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_mesh.mVBOs[2]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, m_mesh.mVBOs[3]);
-
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_mesh.mVBOs[4]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, m_mesh.mVBOs[5]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, m_mesh.mVBOs[6]);
-
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, m_mesh.mVBOs[7]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, m_mesh.mVBOs[8]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_mesh.mVBOs[1]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, m_mesh.mVBOs[2]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_mesh.mVBOs[3]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, m_mesh.mVBOs[4]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, m_mesh.mVBOs[5]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, m_mesh.mVBOs[6]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, m_mesh.mVBOs[7]);
 }
 
 void GameObjectNew::cleanup()

@@ -47,9 +47,9 @@ bool init()
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
-		SDL_WindowFlags w_flags = (SDL_WindowFlags) (SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+		SDL_WindowFlags w_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 
 		gWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, w_flags);
 		if (gWindow == NULL)
@@ -78,12 +78,7 @@ bool init()
 					printf("Warning: Unable to set VSync! SDL Error: %s\n", SDL_GetError());
 				}
 
-				glDisable(GL_DEPTH_TEST);
-				glDisable(GL_CULL_FACE);
-
-				glEnable(GL_BLEND);
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+				glEnable(GL_DEPTH_TEST);
 
 				glEnable(GL_DEBUG_OUTPUT);
 				glDebugMessageCallback(MessageCallback, 0);
@@ -113,12 +108,12 @@ int main(int argc, char *args[])
 
 		GameState game_state = GameState();
 
-		
 		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		ImGuiIO &io = ImGui::GetIO();
+		(void)io;
 		ImGui::StyleColorsDark();
 		ImGui_ImplSDL2_InitForOpenGL(gWindow, gContext);
-    	const char* glsl_version = "#version 460";
+		const char *glsl_version = "#version 460";
 		ImGui_ImplOpenGL3_Init(glsl_version);
 
 		bool quit = false;
@@ -126,7 +121,7 @@ int main(int argc, char *args[])
 		SDL_Event event;
 		SDL_StartTextInput();
 
-		ImVec2 window_pos = ImVec2(0.0f,0.0f);
+		ImVec2 window_pos = ImVec2(0.0f, 0.0f);
 
 		int delay = 100;
 		int g_exp = -11;
@@ -135,8 +130,8 @@ int main(int argc, char *args[])
 		{
 			while (SDL_PollEvent(&event) != 0)
 			{
-				
-            	ImGui_ImplSDL2_ProcessEvent(&event);
+
+				ImGui_ImplSDL2_ProcessEvent(&event);
 				game_state.handleEvent(event);
 			}
 
@@ -146,22 +141,22 @@ int main(int argc, char *args[])
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplSDL2_NewFrame();
 			ImGui::NewFrame();
-			
+
 			ImGui::Begin("Controls");
-			
-			ImGui::SliderFloat3("ball_pos",&game_state.m_sphere_pos[0],-1.0,1.0);
+
+			ImGui::SliderFloat3("ball_pos", &game_state.m_sphere_pos[0], -1.0, 1.0);
 			ImGui::SliderFloat("ball_rad", &game_state.m_sphere_rad, 0.01, 1.0);
-			if (ImGui::Button("on/ff")){
+			if (ImGui::Button("on/ff"))
+			{
 				game_state.m_sphere_active = !game_state.m_sphere_active;
 			}
 
 			ImGui::End();
-        	ImGui::Render();
+			ImGui::Render();
 
-        	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-			
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 			SDL_GL_SwapWindow(gWindow);
-			//std::this_thread::sleep_for(std::chrono::milliseconds(delay));
 		}
 
 		ImGui_ImplOpenGL3_Shutdown();

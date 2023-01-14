@@ -114,27 +114,27 @@ void GameState::update()
     }
 
     m_cs.use();
-    m_game_object.update();
+    m_game_object.bind_shader_storage_buffer();
     glUniform1i(7, int(m_change_vertex));
     glDispatchCompute(m_game_object.m_verteces, 1, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     m_cs_grv.use();
-    m_game_object.update();
-    glDispatchCompute((m_game_object.m_verteces / 64)+1, 1, 1);
+    m_game_object.bind_shader_storage_buffer();
+    glDispatchCompute((m_game_object.m_verteces / 64) + 1, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     m_change_vertex = false;
     for (int i = 0; i < 1000; ++i)
     {
         m_cs_cor.use();
-        m_game_object.update();
-        glDispatchCompute((m_game_object.m_edges / 64)+1, 1, 1);
+        m_game_object.bind_shader_storage_buffer();
+        glDispatchCompute((m_game_object.m_edges / 64) + 1, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         m_cs_app.use();
-        m_game_object.update();
-        glDispatchCompute((m_game_object.m_verteces / 64)+1, 1, 1);
+        m_game_object.bind_shader_storage_buffer();
+        glDispatchCompute((m_game_object.m_verteces / 64) + 1, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         if (m_sphere_active)
@@ -142,16 +142,15 @@ void GameState::update()
             m_cs_ball.use();
             glUniform3fv(0, 1, &m_sphere_pos[0]);
             glUniform1fv(1, 1, &m_sphere_rad);
-            m_game_object.update();
-            glDispatchCompute((m_game_object.m_verteces / 64)+1, 1, 1);
+            m_game_object.bind_shader_storage_buffer();
+            glDispatchCompute((m_game_object.m_verteces / 64) + 1, 1, 1);
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
-
     }
 
     m_cs_post.use();
-    m_game_object.update();
-    glDispatchCompute((m_game_object.m_verteces / 64)+1, 1, 1);
+    m_game_object.bind_shader_storage_buffer();
+    glDispatchCompute((m_game_object.m_verteces / 64) + 1, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
