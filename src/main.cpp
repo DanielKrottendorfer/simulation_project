@@ -144,6 +144,8 @@ int main(int argc, char *args[])
 
 			ImGui::Begin("Controls");
 
+			ImGui::SliderInt("simulation_steps",&game_state.m_simulation_steps,1,10000);
+
 			ImGui::SliderFloat3("sphere_pos", &game_state.m_sphere_pos[0], -1.0f, 1.0f);
 			ImGui::SliderFloat("sphere_rad", &game_state.m_sphere_rad, 0.01f, 1.0f);
 			if (ImGui::Button("on/ff"))

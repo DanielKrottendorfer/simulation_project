@@ -123,11 +123,9 @@ GameObject GameObject::new_cloth()
     // vertex temp vector
     g.m_mesh.attach_buffer<glm::vec4>(NULL, v_size / 4, GL_ARRAY_BUFFER);
 
-
     // element buffer
     g.m_indexSize = sizeof(faceTriIds) / sizeof(faceTriIds[0]);
     g.m_mesh.attach_buffer(faceTriIds, g.m_indexSize, GL_ELEMENT_ARRAY_BUFFER);
-
 
     g.m_position = glm::vec3(0.0f, 0.0f, 0.0f);
 

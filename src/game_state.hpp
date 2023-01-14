@@ -43,6 +43,8 @@ struct GameState
     glm::vec3 m_sphere_pos;
     float m_sphere_rad;
 
+    int m_simulation_steps = 1000;
+
     bool left = false;
     bool right = false;
     bool forward = false;
@@ -132,7 +134,8 @@ void GameState::update()
         m_cam_pos.y -= 0.01f;
     }
 
-    if (m_pull_vertex){
+    if (m_pull_vertex)
+    {
         m_cs_pull.use();
         m_cloth.bind_shader_storage_buffer();
         glDispatchCompute(m_cloth.m_verteces, 1, 1);
@@ -145,7 +148,7 @@ void GameState::update()
     glDispatchCompute((m_cloth.m_verteces / 64) + 1, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    for (int i = 0; i < 1000; ++i)
+    for (int i = 0; i < m_simulation_steps; ++i)
     {
         m_cs_correction.use();
         m_cloth.bind_shader_storage_buffer();

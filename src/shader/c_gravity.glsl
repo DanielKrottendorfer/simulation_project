@@ -19,7 +19,6 @@ layout(std430, binding = 11) buffer velocityIn {
 };
 
 void main() {
-
     if (stiff[gl_GlobalInvocationID.x] == 0) {
         vel[gl_GlobalInvocationID.x].y -= 0.001;
         vertInP[gl_GlobalInvocationID.x] = vertIn[gl_GlobalInvocationID.x];

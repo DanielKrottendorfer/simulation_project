@@ -153,10 +153,10 @@ namespace gl_util
         {
             glDrawElements(mode, count, GL_UNSIGNED_INT, NULL);
         }
-        
+
         void draw_arrays(GLenum mode, GLsizei count)
         {
-            glDrawArrays(mode,0,count);
+            glDrawArrays(mode, 0, count);
         }
     };
 
@@ -221,7 +221,7 @@ namespace gl_util
             id = -1;
         }
 
-        ComputeShader(const char* cs_path)
+        ComputeShader(const char *cs_path)
         {
             id = glCreateProgram();
             GLint cs = gl_util::new_shader(cs_path, GL_COMPUTE_SHADER);
@@ -241,7 +241,6 @@ namespace gl_util
         {
             glDeleteProgram(id);
         }
-
     };
 
     struct Texture
