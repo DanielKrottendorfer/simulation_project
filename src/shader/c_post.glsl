@@ -10,6 +10,7 @@ layout(std430, binding = 9) buffer fixedIn {
     uint stiff[];
 };
 
+
 layout(std430, binding = 10) buffer vertexP {
     vec4 vertInP[];
 };
@@ -17,12 +18,9 @@ layout(std430, binding = 10) buffer vertexP {
 layout(std430, binding = 11) buffer velocityIn {
     vec4 vel[];
 };
-
 void main() {
 
     if (stiff[gl_GlobalInvocationID.x] == 0) {
-        vel[gl_GlobalInvocationID.x].y -= 0.001;
-        vertInP[gl_GlobalInvocationID.x] = vertIn[gl_GlobalInvocationID.x];
-        vertIn[gl_GlobalInvocationID.x] += vel[gl_GlobalInvocationID.x];
+        vel[gl_GlobalInvocationID.x] = vertIn[gl_GlobalInvocationID.x] - vertInP[gl_GlobalInvocationID.x];
     }
 }

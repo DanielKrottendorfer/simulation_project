@@ -22,6 +22,6 @@ layout(std430, binding = 9) buffer fixedIn {
 void main() {
     if(stiff[gl_GlobalInvocationID.x] == 0 && moveVertex == 1)
     {
-        vertIn[gl_GlobalInvocationID.x].x -= 1.0;
+        vertIn[gl_GlobalInvocationID.x].x -= 0.1;
     }
 }

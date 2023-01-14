@@ -155,10 +155,10 @@ GameObjectNew GameObjectNew::new_cloth()
     std::vector<int> edg_ref_lens;
     std::vector<int> stiff;
 
-    unsigned int size = sizeof(vertexDataVec4) / sizeof(vertexDataVec4[0]);
-    for (int x = 0; x < (size - 4); x += 4)
+    unsigned int v_size = sizeof(vertexDataVec4) / sizeof(vertexDataVec4[0]);
+    for (int x = 0; x < (v_size - 4); x += 4)
     {
-        for (int y = x + 4; y < size; y += 4)
+        for (int y = x + 4; y < v_size; y += 4)
         {
             glm::vec2 va(vertexDataVec4[x], vertexDataVec4[x + 1]);
             glm::vec2 vb(vertexDataVec4[y], vertexDataVec4[y + 1]);
@@ -190,7 +190,7 @@ GameObjectNew GameObjectNew::new_cloth()
 
     float y_max = vertexDataVec4[1];
 
-    for (int i = 0; i < size; i += 4)
+    for (int i = 0; i < v_size; i += 4)
     {
         if (y_max < vertexDataVec4[i + 1])
         {
@@ -198,7 +198,7 @@ GameObjectNew GameObjectNew::new_cloth()
         }
     }
 
-    for (int i = 0; i < size; i += 4)
+    for (int i = 0; i < v_size; i += 4)
     {
         if (y_max == vertexDataVec4[i + 1])
         {
@@ -225,22 +225,28 @@ GameObjectNew GameObjectNew::new_cloth()
     std::cout << edgeIdVector.size() << std::endl;
 
     g.m_edges = edgeIdVector.size();
-    g.m_verteces = size / 4;
+    g.m_verteces = v_size / 4;
 
     g.m_mesh.init();
-    g.m_mesh.attach_buffer(v_data, size, GL_ARRAY_BUFFER);
+    g.m_mesh.attach_buffer(v_data, v_size, GL_ARRAY_BUFFER);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
 
-    g.m_mesh.attach_buffer(&colorVec[0], size, GL_ARRAY_BUFFER);
+    g.m_mesh.attach_buffer(&colorVec[0], v_size, GL_ARRAY_BUFFER);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
 
     g.m_mesh.attach_buffer(&edgeIdVector[0], edgeIdVector.size(), GL_ARRAY_BUFFER);
+
+    // correction vector
     g.m_mesh.attach_buffer<glm::vec4>(NULL, edgeIdVector.size(), GL_ARRAY_BUFFER);
     g.m_mesh.attach_buffer(&edg_refs[0], edg_refs.size(), GL_ARRAY_BUFFER);
     g.m_mesh.attach_buffer(&edg_ref_lens[0], edg_ref_lens.size(), GL_ARRAY_BUFFER);
     g.m_mesh.attach_buffer(&stiff[0], stiff.size(), GL_ARRAY_BUFFER);
+    // velocity vector
+    g.m_mesh.attach_buffer<glm::vec4>(NULL, v_size/4, GL_ARRAY_BUFFER);
+    // vertex temp vector
+    g.m_mesh.attach_buffer<glm::vec4>(NULL, v_size/4, GL_ARRAY_BUFFER);
 
     g.m_indexSize = sizeof(faceTriIds) / sizeof(faceTriIds[0]);
     g.m_mesh.attach_buffer(faceTriIds, g.m_indexSize, GL_ELEMENT_ARRAY_BUFFER);
@@ -260,6 +266,9 @@ void GameObjectNew::update()
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_mesh.mVBOs[4]);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, m_mesh.mVBOs[5]);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, m_mesh.mVBOs[6]);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, m_mesh.mVBOs[7]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, m_mesh.mVBOs[8]);
 }
 
 void GameObjectNew::cleanup()

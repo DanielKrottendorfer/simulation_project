@@ -8,6 +8,7 @@
 #include <glm/ext.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 #include <SDL.h>
 
 #include "opengl_util.hpp"
@@ -28,17 +29,21 @@ struct GameState
     gl_util::ComputeShader m_cs_grv;
     gl_util::ComputeShader m_cs_cor;
     gl_util::ComputeShader m_cs_app;
+    gl_util::ComputeShader m_cs_post;
 
     glm::mat4 m_proj_mat;
 
-    float m_camera_zoom = 0.5f;
-    float m_camera_x = 0.0f;
-    float m_camera_y = 0.76f;
+    glm::vec3 m_cam_pos;
+    glm::vec3 m_cam_dir;
 
     bool left = false;
     bool right = false;
+    bool forward = false;
+    bool backward = false;
     bool up = false;
     bool down = false;
+
+    bool mouse_b_down = false;
 
     size_t m_focus = 3;
 
@@ -63,52 +68,56 @@ GameState::GameState()
     m_cs_grv = gl_util::ComputeShader("./src/shader/c_grav.glsl");
     m_cs_cor = gl_util::ComputeShader("./src/shader/c_cor.glsl");
     m_cs_app = gl_util::ComputeShader("./src/shader/c_apply.glsl");
+    m_cs_post = gl_util::ComputeShader("./src/shader/c_post.glsl");
 
     m_game_object = GameObjectNew::new_cloth();
 
-    float temp = m_camera_zoom;
-
-    m_proj_mat = glm::ortho(-temp, temp, -temp, temp, -2.0f, 2.0f);
+    m_cam_pos = glm::vec3(-0.859062, 0.869206, 0.675616);
+    m_cam_dir = glm::vec3(0.736072, -0.173554, -0.654311);
 }
 
 void GameState::update()
 {
-    if (left)
-    {
-        m_camera_x -= 0.01f;
-    }
-    if (right)
-    {
-        m_camera_x += 0.01f;
-    }
-    if (up)
-    {
-        m_camera_y += 0.01f;
-    }
-    if (down)
-    {
-        m_camera_y -= 0.01f;
-    }
+      auto n_vec = rotate(m_cam_dir,1.57f,glm::vec3(0.0,1.0,0.0));
+      if (left)
+      {
+          m_cam_pos += n_vec * 0.01f;
+      }
+      if (right)
+      {
+          m_cam_pos -= n_vec * 0.01f;
+      }
+      if (forward)
+      {
+          m_cam_pos += m_cam_dir * 0.01f;
+      }
+      if (backward)
+      {
+          m_cam_pos -= m_cam_dir * 0.01f;
+      }
+      if (up)
+      {
+          m_cam_pos.y += 0.01;
+      }
+      if (down)
+      {
+          m_cam_pos.y -= 0.01;
+      }
 
-    std::cout << m_camera_y << std::endl;
-    std::cout << m_camera_zoom << std::endl;
-
-     m_cs.use();
-     m_game_object.update();
-     glUniform1i(7, int(m_change_vertex));
-     glDispatchCompute((unsigned int)100, (unsigned int)1, 1);
-     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    m_cs.use();
+    m_game_object.update();
+    glUniform1i(7, int(m_change_vertex));
+    glDispatchCompute((unsigned int)m_game_object.m_verteces, (unsigned int)1, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     m_cs_grv.use();
     m_game_object.update();
     glDispatchCompute((unsigned int)m_game_object.m_verteces, (unsigned int)1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-
     m_change_vertex = false;
     for (int i = 0; i < 100; ++i)
     {
-
         m_cs_cor.use();
         m_game_object.update();
         glDispatchCompute((unsigned int)m_game_object.m_edges, (unsigned int)1, 1);
@@ -119,6 +128,11 @@ void GameState::update()
         glDispatchCompute((unsigned int)m_game_object.m_verteces, (unsigned int)1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     }
+
+    m_cs_post.use();
+    m_game_object.update();
+    glDispatchCompute((unsigned int)m_game_object.m_verteces, (unsigned int)1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
 void GameState::render()
@@ -128,11 +142,11 @@ void GameState::render()
 
     m_program.use();
 
-    float ratio = static_cast<float>(m_window_height) / static_cast<float>(m_window_width);
+    float ratio = static_cast<float>(m_window_width) / static_cast<float>(m_window_height);
 
-    glm::mat4 m = glm::translate(glm::vec3(m_game_object.m_position.x, m_game_object.m_position.y, 0.0f));
-
-    m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
+    // glm::mat4 m = glm::translate(glm::vec3(m_game_object.m_position.x, m_game_object.m_position.y, 0.0f));
+    glm::mat4 m = glm::lookAtRH(m_cam_pos, m_cam_pos+m_cam_dir, glm::vec3(0.0, 1.0, 0.0));
+    m_proj_mat = glm::perspective(45.0f, ratio, 0.001f, 100.0f);
 
     glm::mat4 mvp = m_proj_mat * m;
 
@@ -177,32 +191,32 @@ void GameState::handleEvent(SDL_Event event)
     }
     break;
 
-    case SDL_MOUSEWHEEL:
+    case SDL_MOUSEBUTTONDOWN: 
     {
-        auto mouse_wheel_dir = event.wheel.y;
-
-        if (mouse_wheel_dir > 0.0f)
-        {
-            m_camera_zoom -= 0.05f;
+        if (event.button.button == SDL_BUTTON_RIGHT) {
+            mouse_b_down = true;
+            SDL_SetRelativeMouseMode(SDL_TRUE);
         }
-        else
-        {
-            m_camera_zoom += 0.05f;
+    }
+    break;
+    case SDL_MOUSEBUTTONUP:
+    {
+        if (event.button.button == SDL_BUTTON_RIGHT) {
+            mouse_b_down = false;
+            SDL_SetRelativeMouseMode(SDL_FALSE);
         }
-
-        // printf("zoom: %f\n", m_camera_zoom);
     }
     break;
 
     case SDL_MOUSEMOTION:
     {
-        int x = 0, y = 0;
-        SDL_GetMouseState(&x, &y);
-
-        // std::cout << "X MOTION: " << x << std::endl;
-        // std::cout << "Y MOTION: " << y << std::endl;
+        if (mouse_b_down) {
+            float x = static_cast<float>(event.motion.xrel);
+            m_cam_dir = rotate(m_cam_dir, -0.001f * x, glm::vec3(0.0, 1.0, 0.0));
+            float y = static_cast<float>(event.motion.yrel);
+            m_cam_dir = rotate(m_cam_dir, -0.001f * y, glm::vec3(1.0, 0.0, 0.0));
+        }
     }
-    break;
 
     case SDL_KEYDOWN:
     {
@@ -210,6 +224,8 @@ void GameState::handleEvent(SDL_Event event)
         switch (key)
         {
         case SDL_SCANCODE_Q:
+            std::cout << glm::to_string(m_cam_pos) << std::endl;
+            std::cout << glm::to_string(m_cam_dir)<< std::endl;
             gRenderQuad = !gRenderQuad;
             if (!gRenderQuad)
             {
@@ -227,24 +243,22 @@ void GameState::handleEvent(SDL_Event event)
             m_quit = true;
             break;
         case SDL_SCANCODE_W:
-            // m_camera_y += 0.1f;
-            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
-            up = true;
+            forward = true;
             break;
         case SDL_SCANCODE_A:
             left = true;
-            // m_camera_x -= 0.1f;
-            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
             break;
         case SDL_SCANCODE_S:
-            down = true;
-            // m_camera_y -= 0.1f;
-            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
+            backward = true;
             break;
         case SDL_SCANCODE_D:
             right = true;
-            // m_camera_x += 0.1f;
-            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
+            break;
+        case SDL_SCANCODE_Z:
+            up = true;
+            break;
+        case SDL_SCANCODE_X:
+            down = true;
             break;
         default:
             break;
@@ -258,24 +272,22 @@ void GameState::handleEvent(SDL_Event event)
         switch (key)
         {
         case SDL_SCANCODE_W:
-            up = false;
-            // m_camera_y += 0.1f;
-            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
+            forward = false;
             break;
         case SDL_SCANCODE_A:
             left = false;
-            // m_camera_x -= 0.1f;
-            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
             break;
         case SDL_SCANCODE_S:
-            down = false;
-            // m_camera_y -= 0.1f;
-            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
+            backward = false;
             break;
         case SDL_SCANCODE_D:
             right = false;
-            // m_camera_x += 0.1f;
-            // m_proj_mat = glm::ortho(-m_camera_zoom + m_camera_x, m_camera_zoom + m_camera_x, -m_camera_zoom + m_camera_y, m_camera_zoom + m_camera_y, -2.0f, 2.0f);
+            break;
+        case SDL_SCANCODE_Z:
+            up = false;
+            break;
+        case SDL_SCANCODE_X:
+            down = false;
             break;
         default:
             break;
