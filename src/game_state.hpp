@@ -27,6 +27,7 @@ struct GameState
     gl_util::Program m_program;
     gl_util::ComputeShader m_cs;
     gl_util::ComputeShader m_cs_grv;
+    gl_util::ComputeShader m_cs_ball;
     gl_util::ComputeShader m_cs_cor;
     gl_util::ComputeShader m_cs_app;
     gl_util::ComputeShader m_cs_post;
@@ -35,6 +36,9 @@ struct GameState
 
     glm::vec3 m_cam_pos;
     glm::vec3 m_cam_dir;
+
+    glm::vec3 m_sphere_pos;
+    float m_sphere_rad;
 
     bool left = false;
     bool right = false;
@@ -66,6 +70,7 @@ GameState::GameState()
 
     m_cs = gl_util::ComputeShader("./src/shader/cs.glsl");
     m_cs_grv = gl_util::ComputeShader("./src/shader/c_grav.glsl");
+    m_cs_ball = gl_util::ComputeShader("./src/shader/c_ball.glsl");
     m_cs_cor = gl_util::ComputeShader("./src/shader/c_cor.glsl");
     m_cs_app = gl_util::ComputeShader("./src/shader/c_apply.glsl");
     m_cs_post = gl_util::ComputeShader("./src/shader/c_post.glsl");
@@ -74,6 +79,9 @@ GameState::GameState()
 
     m_cam_pos = glm::vec3(0.939481, 1.330551, 0.752915);
     m_cam_dir = glm::vec3(-0.583577, -0.590341, -0.557754);
+
+    m_sphere_pos = glm::vec3(0.0,0.2,0.0);
+    m_sphere_rad = 0.1f;
 }
 
 void GameState::update()
@@ -124,6 +132,13 @@ void GameState::update()
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         m_cs_app.use();
+        m_game_object.update();
+        glDispatchCompute((unsigned int)m_game_object.m_verteces, (unsigned int)1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+        m_cs_ball.use();
+        glUniform3fv(0,1,&m_sphere_pos[0]);
+        glUniform1fv(1,1,&m_sphere_rad);
         m_game_object.update();
         glDispatchCompute((unsigned int)m_game_object.m_verteces, (unsigned int)1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
