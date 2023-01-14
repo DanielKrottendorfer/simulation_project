@@ -136,14 +136,14 @@ GameObject GameObject::new_cloth()
 
 void GameObject::bind_shader_storage_buffer()
 {
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_mesh.mVBOs[0]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_mesh.mVBOs[1]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, m_mesh.mVBOs[2]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_mesh.mVBOs[3]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, m_mesh.mVBOs[4]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, m_mesh.mVBOs[5]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, m_mesh.mVBOs[6]);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, m_mesh.mVBOs[7]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_mesh.m_VBOs[0]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, m_mesh.m_VBOs[1]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, m_mesh.m_VBOs[2]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_mesh.m_VBOs[3]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, m_mesh.m_VBOs[4]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, m_mesh.m_VBOs[5]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, m_mesh.m_VBOs[6]);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, m_mesh.m_VBOs[7]);
 }
 
 void GameObject::cleanup()

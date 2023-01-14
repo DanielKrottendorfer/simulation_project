@@ -110,26 +110,26 @@ namespace gl_util
     public:
         Mesh()
         {
-            mVAO = 0;
-            mVBOs = std::vector<GLuint>();
+            m_VAO = 0;
+            m_VBOs = std::vector<GLuint>();
         }
 
-        GLuint mVAO;
-        std::vector<GLuint> mVBOs;
+        GLuint m_VAO;
+        std::vector<GLuint> m_VBOs;
 
         void init()
         {
-            glGenVertexArrays(1, &mVAO);
-            glBindVertexArray(mVAO);
+            glGenVertexArrays(1, &m_VAO);
+            glBindVertexArray(m_VAO);
         }
 
         void cleanup()
         {
-            for (GLuint b : mVBOs)
+            for (GLuint b : m_VBOs)
             {
                 glDeleteBuffers(1, &b);
             }
-            glDeleteVertexArrays(1, &mVAO);
+            glDeleteVertexArrays(1, &m_VAO);
         }
 
         template <typename T>
@@ -141,12 +141,12 @@ namespace gl_util
             glBindBuffer(buffer_type, gVBO);
             glBufferData(buffer_type, len * sizeof(T), data, GL_STATIC_DRAW);
 
-            mVBOs.push_back(gVBO);
+            m_VBOs.push_back(gVBO);
         }
 
         void bind()
         {
-            glBindVertexArray(mVAO);
+            glBindVertexArray(m_VAO);
         }
 
         void draw_elements(GLenum mode, GLsizei count)

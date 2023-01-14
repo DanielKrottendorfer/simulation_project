@@ -21,7 +21,7 @@ struct GameState
     bool gRenderQuad = true;
     bool m_quit = false;
     bool m_space_down = false;
-    bool m_change_vertex = false;
+    bool m_pull_vertex = false;
 
     GameObject m_cloth;
     gl_util::Mesh m_sphere;
@@ -29,11 +29,11 @@ struct GameState
 
     gl_util::Program m_cloth_render_program;
     gl_util::Program m_sphere_render_program;
-    gl_util::ComputeShader m_cs;
-    gl_util::ComputeShader m_cs_grv;
-    gl_util::ComputeShader m_cs_ball;
-    gl_util::ComputeShader m_cs_cor;
-    gl_util::ComputeShader m_cs_app;
+    gl_util::ComputeShader m_cs_pull;
+    gl_util::ComputeShader m_cs_grvity;
+    gl_util::ComputeShader m_cs_sphere;
+    gl_util::ComputeShader m_cs_correction;
+    gl_util::ComputeShader m_cs_apply_cor;
     gl_util::ComputeShader m_cs_post;
 
     glm::vec3 m_cam_pos;
@@ -71,11 +71,11 @@ GameState::GameState()
     m_cloth_render_program = gl_util::Program("./src/shader/vs.glsl", "./src/shader/fs.glsl", "./src/shader/gs.glsl");
     m_sphere_render_program = gl_util::Program("./src/shader/vs_sphere.glsl", "./src/shader/fs_sphere.glsl");
 
-    m_cs = gl_util::ComputeShader("./src/shader/cs.glsl");
-    m_cs_grv = gl_util::ComputeShader("./src/shader/c_grav.glsl");
-    m_cs_ball = gl_util::ComputeShader("./src/shader/c_ball.glsl");
-    m_cs_cor = gl_util::ComputeShader("./src/shader/c_cor.glsl");
-    m_cs_app = gl_util::ComputeShader("./src/shader/c_apply.glsl");
+    m_cs_pull = gl_util::ComputeShader("./src/shader/c_pull.glsl");
+    m_cs_grvity = gl_util::ComputeShader("./src/shader/c_gravity.glsl");
+    m_cs_sphere = gl_util::ComputeShader("./src/shader/c_sphere.glsl");
+    m_cs_correction = gl_util::ComputeShader("./src/shader/c_correction.glsl");
+    m_cs_apply_cor = gl_util::ComputeShader("./src/shader/c_apply.glsl");
     m_cs_post = gl_util::ComputeShader("./src/shader/c_post.glsl");
 
     m_cloth = GameObject::new_cloth();
@@ -132,33 +132,34 @@ void GameState::update()
         m_cam_pos.y -= 0.01f;
     }
 
-    m_cs.use();
-    m_cloth.bind_shader_storage_buffer();
-    glUniform1i(7, int(m_change_vertex));
-    glDispatchCompute(m_cloth.m_verteces, 1, 1);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    if (m_pull_vertex){
+        m_cs_pull.use();
+        m_cloth.bind_shader_storage_buffer();
+        glDispatchCompute(m_cloth.m_verteces, 1, 1);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        m_pull_vertex = false;
+    }
 
-    m_cs_grv.use();
+    m_cs_grvity.use();
     m_cloth.bind_shader_storage_buffer();
     glDispatchCompute((m_cloth.m_verteces / 64) + 1, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    m_change_vertex = false;
     for (int i = 0; i < 1000; ++i)
     {
-        m_cs_cor.use();
+        m_cs_correction.use();
         m_cloth.bind_shader_storage_buffer();
         glDispatchCompute((m_cloth.m_edges / 64) + 1, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-        m_cs_app.use();
+        m_cs_apply_cor.use();
         m_cloth.bind_shader_storage_buffer();
         glDispatchCompute((m_cloth.m_verteces / 64) + 1, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         if (m_sphere_active)
         {
-            m_cs_ball.use();
+            m_cs_sphere.use();
             glUniform3fv(0, 1, &m_sphere_pos[0]);
             glUniform1fv(1, 1, &m_sphere_rad);
             m_cloth.bind_shader_storage_buffer();
@@ -218,11 +219,11 @@ void GameState::cleanup()
     m_cloth_render_program.cleanup();
     m_sphere_render_program.cleanup();
 
-    m_cs.cleanup();
-    m_cs_grv.cleanup();
-    m_cs_ball.cleanup();
-    m_cs_cor.cleanup();
-    m_cs_app.cleanup();
+    m_cs_pull.cleanup();
+    m_cs_grvity.cleanup();
+    m_cs_sphere.cleanup();
+    m_cs_correction.cleanup();
+    m_cs_apply_cor.cleanup();
     m_cs_post.cleanup();
 }
 
@@ -300,7 +301,7 @@ void GameState::handleEvent(SDL_Event event)
             }
             break;
         case SDL_SCANCODE_E:
-            m_change_vertex = true;
+            m_pull_vertex = true;
             break;
         case SDL_SCANCODE_ESCAPE:
             m_quit = true;

@@ -25,7 +25,7 @@ void main(){
 
     float spec_l = dot(pos_to_eye,light);
     spec_l *= spec_l;
-    float spec_2 = pow(spec_l, 20.0);
+    float spec_2 = pow(spec_l, 8.0);
 
 	out_color = vec4((col)*(diff_l+spec_2),1.0);
 }
