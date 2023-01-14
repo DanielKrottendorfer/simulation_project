@@ -81,8 +81,8 @@ GameState::GameState()
     m_cam_pos = glm::vec3(-0.718707, 0.672204, 0.737830);
     m_cam_dir = glm::vec3(0.736265, -0.156785, -0.658441);
 
-    m_sphere_pos = glm::vec3(0.0, 0.3, -0.1);
-    m_sphere_rad = 0.2f;
+    m_sphere_pos = glm::vec3(0.0, 0.7, -0.4);
+    m_sphere_rad = 0.1f;
 }
 
 void GameState::update()
