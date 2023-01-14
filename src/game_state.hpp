@@ -171,9 +171,6 @@ void GameState::update()
             glDispatchCompute((m_cloth.m_verteces / 64) + 1, 1, 1);
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
-
-        if(temp.y < 0.0 && m_game_objects[3].m_position.y > 0.0)
-            printf("earth took %d calculated seconds to finish an orbit",loops);
         
         loops += 1;
     }
@@ -300,8 +297,8 @@ void GameState::handleEvent(SDL_Event event)
         switch (key)
         {
         case SDL_SCANCODE_Q:
-            gRenderQuad = !gRenderQuad;
-            if (!gRenderQuad)
+            m_gRenderQuad = !m_gRenderQuad;
+            if (!m_gRenderQuad)
             {
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             }
