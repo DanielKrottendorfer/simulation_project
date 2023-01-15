@@ -101,11 +101,11 @@ GameState::GameState()
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL);
     m_sphere_vert_c = out_vertices.size();
 
-    m_cam_pos = glm::vec3(0.467810, 0.854653, 0.993788);
-    m_cam_dir = glm::vec3(-0.322434, -0.179466, -0.929587);
-
     m_sphere_pos = glm::vec3(0.0, 0.7, -0.4);
     m_sphere_rad = 0.1f;
+
+    m_cam_pos = glm::vec3(0.467810, 0.854653, 0.993788);
+    m_cam_dir = glm::vec3(-0.322434, -0.179466, -0.929587);
 }
 
 void GameState::update()

@@ -116,15 +116,11 @@ int main(int argc, char *args[])
 		const char *glsl_version = "#version 460";
 		ImGui_ImplOpenGL3_Init(glsl_version);
 
-		bool quit = false;
-
 		SDL_Event event;
 		SDL_StartTextInput();
 
-		ImVec2 window_pos = ImVec2(0.0f, 0.0f);
-
-		int g_exp = -11;
-
+    	auto start = std::chrono::steady_clock::now();
+		int fps = 0;
 		while (!game_state.m_quit)
 		{
 			while (SDL_PollEvent(&event) != 0)
@@ -158,6 +154,17 @@ int main(int argc, char *args[])
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 			SDL_GL_SwapWindow(gWindow);
+
+			auto end = std::chrono::steady_clock::now();
+			std::chrono::duration<double> elapsed_seconds = end-start;
+
+			if(elapsed_seconds.count() > 1.0){
+				std::cout << "fps: " << fps << std::endl;
+				start = std::chrono::steady_clock::now();
+				fps = 0;
+			}else{
+				fps += 1;
+			}
 		}
 
 		ImGui_ImplOpenGL3_Shutdown();

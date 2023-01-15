@@ -16,7 +16,7 @@ layout(std430, binding = 6) buffer vertexOut {
     vec4 cor[];
 };
 
-float MAGIC_S = 0.5; //MAGIC;
+float MAGIC_S = 0.6; //MAGIC;
 
 void main() {
 
