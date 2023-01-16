@@ -111,6 +111,7 @@ GameState::GameState()
 void GameState::update()
 {
     auto n_vec = rotate(m_cam_dir, 1.57f, glm::vec3(0.0, 1.0, 0.0));
+    n_vec.y = 0.0;
     if (left)
     {
         m_cam_pos += n_vec * 0.01f;
