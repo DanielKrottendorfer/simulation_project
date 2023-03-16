@@ -1,7 +1,6 @@
 #pragma once
 
 #include <glad/glad.h>
-#include <lodepng.h>
 
 #include <iostream>
 #include <fstream>
@@ -104,62 +103,6 @@ namespace gl_util
         }
     }
 
-    struct Mesh
-    {
-
-    public:
-        Mesh()
-        {
-            m_VAO = 0;
-            m_VBOs = std::vector<GLuint>();
-        }
-
-        GLuint m_VAO;
-        std::vector<GLuint> m_VBOs;
-
-        void init()
-        {
-            glGenVertexArrays(1, &m_VAO);
-            glBindVertexArray(m_VAO);
-        }
-
-        void cleanup()
-        {
-            for (GLuint b : m_VBOs)
-            {
-                glDeleteBuffers(1, &b);
-            }
-            glDeleteVertexArrays(1, &m_VAO);
-        }
-
-        template <typename T>
-        void attach_buffer(T *data, uint32_t len, GLenum buffer_type)
-        {
-            GLuint gVBO = 0;
-
-            glGenBuffers(1, &gVBO);
-            glBindBuffer(buffer_type, gVBO);
-            glBufferData(buffer_type, len * sizeof(T), data, GL_STATIC_DRAW);
-
-            m_VBOs.push_back(gVBO);
-        }
-
-        void bind()
-        {
-            glBindVertexArray(m_VAO);
-        }
-
-        void draw_elements(GLenum mode, GLsizei count)
-        {
-            glDrawElements(mode, count, GL_UNSIGNED_INT, NULL);
-        }
-
-        void draw_arrays(GLenum mode, GLsizei count)
-        {
-            glDrawArrays(mode, 0, count);
-        }
-    };
-
     struct Program
     {
         GLint id;
@@ -242,54 +185,18 @@ namespace gl_util
             glDeleteProgram(id);
         }
     };
-
-    struct Texture
+    
+    void MessageCallback(GLenum source,
+                         GLenum type,
+                         GLuint id,
+                         GLenum severity,
+                         GLsizei length,
+                         const GLchar *message,
+                         const void *userParam)
     {
-        GLuint m_id;
+        printf("GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+               (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+               type, severity, message);
+    }
 
-        bool load_png(const char *filename)
-        {
-
-            unsigned error;
-            unsigned char *image = 0;
-            unsigned width, height;
-
-            error = lodepng_decode32_file(&image, &width, &height, filename);
-            if (error)
-            {
-                printf("error %u: %s\n", error, lodepng_error_text(error));
-                return false;
-            }
-
-            glGenTextures(1, &m_id);
-            glBindTexture(GL_TEXTURE_2D, m_id);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
-
-            delete (image);
-
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glGenerateMipmap(GL_TEXTURE_2D);
-
-            return true;
-        }
-
-        void activate_texture(GLuint a)
-        {
-            glActiveTexture(GL_TEXTURE0 + a);
-            glBindTexture(GL_TEXTURE_2D, m_id);
-        }
-
-        void cleanup()
-        {
-            glDeleteTextures(1, &m_id);
-        }
-
-        Texture()
-        {
-            m_id = 0;
-        }
-    };
 }

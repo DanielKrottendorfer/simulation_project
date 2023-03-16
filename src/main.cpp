@@ -1,37 +1,138 @@
 #include <SDL.h>
 #include <glad/glad.h>
 #include <SDL_opengl.h>
-#include <imgui.h>
-#include <imgui_impl_sdl.h>
-#include <imgui_impl_opengl3.h>
 
 #include <stdio.h>
-#include <chrono>
-#include <thread>
 #include <string>
+#include <vector>
+#include <random>
+
+#include <algorithm>
 
 #include "opengl_util.hpp"
-#include "game_state.hpp"
+#include "settings.hpp"
 
-bool init();
+bool init_sdl();
 void close();
+void buffer_data();
+void sort_double_bubble();
 
 SDL_Window *gWindow = NULL;
 SDL_GLContext gContext;
-void MessageCallback(GLenum source,
-					 GLenum type,
-					 GLuint id,
-					 GLenum severity,
-					 GLsizei length,
-					 const GLchar *message,
-					 const void *userParam)
+
+#define WORKGROUPS 512
+size_t elements = WORKGROUPS * 26;
+std::vector<int32_t> v;
+GLuint buffer = 0;
+gl_util::ComputeShader double_bubble;
+
+int main(int argc, char *args[])
 {
-	printf("GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-		   (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
-		   type, severity, message);
+	if (!init_sdl())
+	{
+		return -1;
+	}
+
+	double_bubble = gl_util::ComputeShader("./src/shader/double_bubble.glsl");
+	buffer_data();
+
+	SDL_Event event;
+	bool running = true;
+	while (running)
+	{
+		while (SDL_PollEvent(&event) != 0)
+		{
+			if (event.type == SDL_QUIT)
+				running = false;
+
+			if (event.type == SDL_KEYDOWN)
+			{
+				switch (event.key.keysym.sym)
+				{
+				case SDLK_SPACE:
+					sort_double_bubble();
+					printf("space\n");
+
+					break;
+				case SDLK_ESCAPE:
+					running = false;
+
+					break;
+				default:
+					break;
+				}
+			}
+		}
+
+		SDL_GL_SwapWindow(gWindow);
+	}
+
+	close();
+	return 0;
 }
 
-bool init()
+void sort_double_bubble()
+{
+	double_bubble.use();
+	glUniform1ui(0, elements);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer);
+
+	size_t passes = elements / (WORKGROUPS *2);
+	for (size_t j = 0; j < passes; ++j)
+	{
+		if (j % 2 == 0)
+		{
+			glUniform1ui(1, 0);
+			glDispatchCompute(passes, 1, 1);
+		}
+		else
+		{
+			glUniform1ui(1, 1);
+			glDispatchCompute(passes - 1, 1, 1);
+		}
+
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	}
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
+	
+	void *data = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+	int *stuff = static_cast<int *>(data);
+
+	for (size_t i = 0; i < v.size(); ++i)
+	{
+		if (stuff[i] != v[i])
+		{
+			printf("not sorted s:%d v:%d", stuff[i], v[i]);
+			break;
+		}
+	}
+
+	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
+void buffer_data()
+{
+	v.reserve(elements);
+
+	std::random_device dev;
+	std::mt19937 rng(dev());
+	std::uniform_int_distribution<std::mt19937::result_type> dist6(1, elements); // distribution in range [1, 6]
+
+	for (int i = 0; i < elements; ++i)
+	{
+		v.push_back(dist6(rng));
+	}
+
+	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int32_t) * v.size(), &v[0], GL_DYNAMIC_COPY);
+
+	sort(v.begin(), v.end());
+}
+
+bool init_sdl()
 {
 	bool success = true;
 
@@ -78,8 +179,6 @@ bool init()
 					printf("Warning: Unable to set VSync! SDL Error: %s\n", SDL_GetError());
 				}
 
-				glEnable(GL_DEPTH_TEST);
-
 				// glEnable(GL_DEBUG_OUTPUT);
 				// glDebugMessageCallback(MessageCallback, 0);
 			}
@@ -95,87 +194,4 @@ void close()
 	gWindow = NULL;
 
 	SDL_Quit();
-}
-
-int main(int argc, char *args[])
-{
-	if (!init())
-	{
-		printf("Failed to initialize!\n");
-	}
-	else
-	{
-
-		GameState game_state = GameState();
-
-		ImGui::CreateContext();
-		ImGuiIO &io = ImGui::GetIO();
-		(void)io;
-		ImGui::StyleColorsDark();
-		ImGui_ImplSDL2_InitForOpenGL(gWindow, gContext);
-		const char *glsl_version = "#version 460";
-		ImGui_ImplOpenGL3_Init(glsl_version);
-
-		SDL_Event event;
-		SDL_StartTextInput();
-
-    	auto start = std::chrono::steady_clock::now();
-		int fps = 0;
-		while (!game_state.m_quit)
-		{
-			while (SDL_PollEvent(&event) != 0)
-			{
-
-				ImGui_ImplSDL2_ProcessEvent(&event);
-				game_state.handleEvent(event);
-			}
-
-			game_state.update();
-			game_state.render();
-
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplSDL2_NewFrame();
-			ImGui::NewFrame();
-
-			ImGui::Begin("Controls");
-
-			ImGui::SliderInt("simulation_steps",&game_state.m_simulation_steps,1,10000);
-
-			ImGui::SliderFloat3("sphere_pos", &game_state.m_sphere_pos[0], -1.0f, 1.0f);
-			ImGui::SliderFloat("sphere_rad", &game_state.m_sphere_rad, 0.01f, 1.0f);
-			if (ImGui::Button("on/ff"))
-			{
-				game_state.m_sphere_active = !game_state.m_sphere_active;
-			}
-
-			ImGui::End();
-			ImGui::Render();
-
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-			SDL_GL_SwapWindow(gWindow);
-
-			auto end = std::chrono::steady_clock::now();
-			std::chrono::duration<double> elapsed_seconds = end-start;
-
-			if(elapsed_seconds.count() > 1.0){
-				std::cout << "fps: " << fps << std::endl;
-				start = std::chrono::steady_clock::now();
-				fps = 0;
-			}else{
-				fps += 1;
-			}
-		}
-
-		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplSDL2_Shutdown();
-		ImGui::DestroyContext();
-
-		game_state.cleanup();
-
-		SDL_StopTextInput();
-	}
-
-	close();
-	return 0;
 }
