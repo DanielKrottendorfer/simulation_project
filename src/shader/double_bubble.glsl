@@ -6,7 +6,7 @@
 // in uvec3 gl_GlobalInvocationID;
 // in uint  gl_LocalInvocationIndex;
 
-#define WORKGROUPS 512
+#define WORKGROUPS 1024
 
 layout (local_size_x = WORKGROUPS, local_size_y = 1, local_size_z = 1) in;
 
@@ -17,8 +17,8 @@ layout(std430, binding = 0) buffer layoutParticle{
     int pos[];
 };
 
-shared uint swaps;
 shared int local_pos[WORKGROUPS* 2];
+shared uint swaps;
 
 void local_swap(uint a, uint b) {
     if(local_pos[a] > local_pos[b]) {
